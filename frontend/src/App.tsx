@@ -1,5 +1,4 @@
 import './App.css'
-
 import { useMemo, useState } from 'react'
 import { BookingPanel } from './components/BookingPanel'
 import { FlightList } from './components/FlightList'
@@ -8,6 +7,7 @@ import type { Booking, Flight, FlightSearchParams, ID } from './types'
 
 const CURRENT_USER_ID: ID = 1
 
+// 1. แก้ไข MOCK_FLIGHTS: เพิ่ม property 'status' ให้ครบตาม Interface Flight ใน types.ts
 const MOCK_FLIGHTS: Flight[] = [
   {
     flightId: 101,
@@ -17,6 +17,7 @@ const MOCK_FLIGHTS: Flight[] = [
     travelDate: '2026-01-05T09:30:00.000Z',
     price: 1890,
     availableSeats: 8,
+    status: 'Active', // เพิ่มสถานะตามที่กำหนดใน types.ts
   },
   {
     flightId: 102,
@@ -26,6 +27,7 @@ const MOCK_FLIGHTS: Flight[] = [
     travelDate: '2026-01-06T03:15:00.000Z',
     price: 1290,
     availableSeats: 0,
+    status: 'Active',
   },
   {
     flightId: 103,
@@ -35,6 +37,7 @@ const MOCK_FLIGHTS: Flight[] = [
     travelDate: '2026-01-07T12:00:00.000Z',
     price: 1690,
     availableSeats: 12,
+    status: 'Active',
   },
 ]
 
@@ -47,10 +50,11 @@ function App() {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
 
+  // 2. แก้ไข Filter Logic: ใช้ Nullish Coalescing (??) เพื่อแก้ปัญหา 'possibly undefined'
   const filteredFlights = useMemo(() => {
-    const origin = search.origin.trim().toLowerCase()
-    const destination = search.destination.trim().toLowerCase()
-    const travelDate = search.travelDate
+    const origin = (search.origin ?? '').trim().toLowerCase()
+    const destination = (search.destination ?? '').trim().toLowerCase()
+    const travelDate = search.travelDate ?? ''
 
     return MOCK_FLIGHTS.filter((f) => {
       const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
@@ -81,7 +85,7 @@ function App() {
     <div style={{ display: 'grid', gap: 16 }}>
       <header style={{ textAlign: 'left' }}>
         <h1 style={{ margin: 0 }}>ระบบจองตั๋วเครื่องบิน</h1>
-        <p style={{ margin: 0, opacity: 0.8 }}>Frontend (Strict Typing) — ตัวอย่างการผูก type กับข้อมูลจาก API</p>
+        <p style={{ margin: 0, opacity: 0.8 }}>Frontend (Strict Typing) — จัดการ Type ให้ตรงกับเกณฑ์โปรเจกต์</p>
       </header>
 
       <FlightSearchForm onSearch={handleSearch} />
