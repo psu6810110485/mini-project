@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { User } from './entities/user.entity';
 import { Flight } from './entities/flight.entity';
 import { Booking } from './entities/booking.entity';
+import { FlightsModule } from './flights/flights.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { Booking } from './entities/booking.entity';
         synchronize: true, // สร้างตารางให้อัตโนมัติ (เฉพาะช่วงพัฒนา)
       }),
     }),
+    FlightsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
