@@ -3,14 +3,14 @@ import { useMemo, useState, useEffect } from 'react'
 import { BookingPanel } from './components/BookingPanel'
 import { FlightList } from './components/FlightList'
 import { FlightSearchForm } from './components/FlightSearchForm'
-import { Login } from './components/Login' // เพิ่มหน้า Login เข้ามา
-import api from './api/axios' // นำ axios instance มาใช้สำหรับ Integration 
-import type { Booking, Flight, FlightSearchParams, User } from './types'
+import { Login } from './components/Login' 
+import { AdminFlightManager } from './components/AdminFlightManager' // 1. Import เพิ่ม
+import api from './api/axios' 
+import type { Booking, Flight, FlightSearchParams, User, ID } from './types' // 2. เพิ่ม ID type
 
 function App() {
-  // 1. จัดการสถานะผู้ใช้ (Authentication State) 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [flights, setFlights] = useState<Flight[]>([]); // สำหรับเก็บข้อมูลที่จะ Fetch จาก API [cite: 37]
+  const [flights, setFlights] = useState<Flight[]>([]); 
   const [search, setSearch] = useState<FlightSearchParams>({
     origin: '',
     destination: '',
@@ -19,7 +19,7 @@ function App() {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
 
-  // 2. ตรวจสอบสถานะ Login เมื่อเปิดเว็บครั้งแรก (Persistence) 
+  // ตรวจสอบสถานะ Login เมื่อเปิดเว็บครั้งแรก (Persistence) [cite: 34]
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -27,17 +27,14 @@ function App() {
     }
   }, []);
 
-  // 3. ดึงข้อมูลเที่ยวบินจริงเมื่อ Login สำเร็จ (Integration) [cite: 6, 37]
+  // ดึงข้อมูลเที่ยวบินจริงเมื่อ Login สำเร็จ (Integration) [cite: 6, 37]
   useEffect(() => {
     const fetchFlights = async () => {
       try {
-        // หากต้องการใช้ Mock ไปก่อนให้คอมเมนต์บรรทัดนี้ไว้ แต่ถ้าต่อหลังบ้านแล้วให้เปิดใช้ครับ
         const response = await api.get<Flight[]>('/flights');
         setFlights(response.data);
       } catch (error) {
         console.error("Failed to fetch flights", error);
-        // หาก API หลังบ้านยังไม่พร้อม ให้ใช้ Mock Data ที่คุณเตรียมไว้แทนชั่วคราว
-        // setFlights(MOCK_FLIGHTS); 
       }
     };
 
@@ -46,14 +43,23 @@ function App() {
     }
   }, [currentUser]);
 
-  // ฟังก์ชันสำหรับออกจากระบบ 
+  // 3. เพิ่มฟังก์ชันจัดการข้อมูลสำหรับ Admin (CRUD Logic) 
+  const handleAddFlight = (newFlight: Flight) => {
+    setFlights([newFlight, ...flights]); // อัปเดต State หน้าบ้านทันที
+  };
+
+  const handleDeleteFlight = (id: ID) => {
+    if (window.confirm('คุณต้องการลบเที่ยวบินนี้ใช่หรือไม่?')) {
+      setFlights(flights.filter(f => f.flightId !== id));
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setCurrentUser(null);
   };
 
-  // Logic การค้นหาเดิมของคุณ (เปลี่ยนจาก MOCK_FLIGHTS เป็น flights จาก API)
   const filteredFlights = useMemo(() => {
     const origin = (search.origin ?? '').trim().toLowerCase()
     const destination = (search.destination ?? '').trim().toLowerCase()
@@ -69,7 +75,6 @@ function App() {
     })
   }, [search.destination, search.origin, search.travelDate, flights])
 
-  // --- เงื่อนไขแสดงหน้า Public View (Login)  ---
   if (!currentUser) {
     return (
       <div className="App">
@@ -81,7 +86,6 @@ function App() {
     );
   }
 
-  // --- หน้าจอหลักหลัง Login (User/Admin View) [cite: 37, 38] ---
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <header style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -94,11 +98,13 @@ function App() {
         <button onClick={handleLogout} style={{ height: 'fit-content' }}>ออกจากระบบ</button>
       </header>
 
-      {/* ตัวอย่าง Admin View: ปุ่มที่ User ธรรมดาจะไม่เห็น [cite: 38] */}
+      {/* 4. อัปเดตส่วน Admin View: เรียกใช้ AdminFlightManager เมื่อสิทธิ์เป็น ADMIN  */}
       {currentUser.role === 'ADMIN' && (
-        <div style={{ padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'left' }}>
-          <strong>Admin Panel:</strong> <button style={{ marginLeft: '10px' }}>เพิ่มเที่ยวบินใหม่</button>
-        </div>
+        <AdminFlightManager 
+          flights={flights} 
+          onAddFlight={handleAddFlight} 
+          onDeleteFlight={handleDeleteFlight} 
+        />
       )}
 
       <FlightSearchForm onSearch={setSearch} />
