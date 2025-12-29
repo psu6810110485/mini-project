@@ -1,47 +1,16 @@
 import './App.css'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { BookingPanel } from './components/BookingPanel'
 import { FlightList } from './components/FlightList'
 import { FlightSearchForm } from './components/FlightSearchForm'
-import type { Booking, Flight, FlightSearchParams, ID } from './types'
-
-const CURRENT_USER_ID: ID = 1
-
-// 1. แก้ไข MOCK_FLIGHTS: เพิ่ม property 'status' ให้ครบตาม Interface Flight ใน types.ts
-const MOCK_FLIGHTS: Flight[] = [
-  {
-    flightId: 101,
-    flightCode: 'TG101',
-    origin: 'BKK',
-    destination: 'CNX',
-    travelDate: '2026-01-05T09:30:00.000Z',
-    price: 1890,
-    availableSeats: 8,
-    status: 'Active', // เพิ่มสถานะตามที่กำหนดใน types.ts
-  },
-  {
-    flightId: 102,
-    flightCode: 'FD202',
-    origin: 'BKK',
-    destination: 'HKT',
-    travelDate: '2026-01-06T03:15:00.000Z',
-    price: 1290,
-    availableSeats: 0,
-    status: 'Active',
-  },
-  {
-    flightId: 103,
-    flightCode: 'PG303',
-    origin: 'CNX',
-    destination: 'BKK',
-    travelDate: '2026-01-07T12:00:00.000Z',
-    price: 1690,
-    availableSeats: 12,
-    status: 'Active',
-  },
-]
+import { Login } from './components/Login' // เพิ่มหน้า Login เข้ามา
+import api from './api/axios' // นำ axios instance มาใช้สำหรับ Integration 
+import type { Booking, Flight, FlightSearchParams, User } from './types'
 
 function App() {
+  // 1. จัดการสถานะผู้ใช้ (Authentication State) 
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [flights, setFlights] = useState<Flight[]>([]); // สำหรับเก็บข้อมูลที่จะ Fetch จาก API [cite: 37]
   const [search, setSearch] = useState<FlightSearchParams>({
     origin: '',
     destination: '',
@@ -50,13 +19,47 @@ function App() {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
 
-  // 2. แก้ไข Filter Logic: ใช้ Nullish Coalescing (??) เพื่อแก้ปัญหา 'possibly undefined'
+  // 2. ตรวจสอบสถานะ Login เมื่อเปิดเว็บครั้งแรก (Persistence) 
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // 3. ดึงข้อมูลเที่ยวบินจริงเมื่อ Login สำเร็จ (Integration) [cite: 6, 37]
+  useEffect(() => {
+    const fetchFlights = async () => {
+      try {
+        // หากต้องการใช้ Mock ไปก่อนให้คอมเมนต์บรรทัดนี้ไว้ แต่ถ้าต่อหลังบ้านแล้วให้เปิดใช้ครับ
+        const response = await api.get<Flight[]>('/flights');
+        setFlights(response.data);
+      } catch (error) {
+        console.error("Failed to fetch flights", error);
+        // หาก API หลังบ้านยังไม่พร้อม ให้ใช้ Mock Data ที่คุณเตรียมไว้แทนชั่วคราว
+        // setFlights(MOCK_FLIGHTS); 
+      }
+    };
+
+    if (currentUser) {
+      fetchFlights();
+    }
+  }, [currentUser]);
+
+  // ฟังก์ชันสำหรับออกจากระบบ 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setCurrentUser(null);
+  };
+
+  // Logic การค้นหาเดิมของคุณ (เปลี่ยนจาก MOCK_FLIGHTS เป็น flights จาก API)
   const filteredFlights = useMemo(() => {
     const origin = (search.origin ?? '').trim().toLowerCase()
     const destination = (search.destination ?? '').trim().toLowerCase()
     const travelDate = search.travelDate ?? ''
 
-    return MOCK_FLIGHTS.filter((f) => {
+    return flights.filter((f) => {
       const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
       const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
       const dateOk =
@@ -64,31 +67,41 @@ function App() {
         new Date(f.travelDate).toISOString().slice(0, 10) === travelDate
       return originOk && destOk && dateOk
     })
-  }, [search.destination, search.origin, search.travelDate])
+  }, [search.destination, search.origin, search.travelDate, flights])
 
-  function handleSearch(params: FlightSearchParams) {
-    setSearch(params)
-    setSelectedFlight(null)
-    setLatestBooking(null)
+  // --- เงื่อนไขแสดงหน้า Public View (Login)  ---
+  if (!currentUser) {
+    return (
+      <div className="App">
+        <header style={{ padding: '20px' }}>
+          <h1>ระบบจองตั๋วเครื่องบิน</h1>
+        </header>
+        <Login onLoginSuccess={(user) => setCurrentUser(user)} />
+      </div>
+    );
   }
 
-  function handleSelectFlight(flight: Flight) {
-    setSelectedFlight(flight)
-    setLatestBooking(null)
-  }
-
-  function handleBooked(booking: Booking) {
-    setLatestBooking(booking)
-  }
-
+  // --- หน้าจอหลักหลัง Login (User/Admin View) [cite: 37, 38] ---
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <header style={{ textAlign: 'left' }}>
-        <h1 style={{ margin: 0 }}>ระบบจองตั๋วเครื่องบิน</h1>
-        <p style={{ margin: 0, opacity: 0.8 }}>Frontend (Strict Typing) — จัดการ Type ให้ตรงกับเกณฑ์โปรเจกต์</p>
+      <header style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ margin: 0 }}>ระบบจองตั๋วเครื่องบิน</h1>
+          <p style={{ margin: 0, opacity: 0.8 }}>
+            สวัสดีคุณ <strong>{currentUser.name}</strong> | สิทธิ์: <strong>{currentUser.role}</strong>
+          </p>
+        </div>
+        <button onClick={handleLogout} style={{ height: 'fit-content' }}>ออกจากระบบ</button>
       </header>
 
-      <FlightSearchForm onSearch={handleSearch} />
+      {/* ตัวอย่าง Admin View: ปุ่มที่ User ธรรมดาจะไม่เห็น [cite: 38] */}
+      {currentUser.role === 'ADMIN' && (
+        <div style={{ padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'left' }}>
+          <strong>Admin Panel:</strong> <button style={{ marginLeft: '10px' }}>เพิ่มเที่ยวบินใหม่</button>
+        </div>
+      )}
+
+      <FlightSearchForm onSearch={setSearch} />
 
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start' }}>
         <section style={{ textAlign: 'left' }}>
@@ -96,12 +109,12 @@ function App() {
           <FlightList
             flights={filteredFlights}
             selectedFlightId={selectedFlight?.flightId}
-            onSelect={handleSelectFlight}
+            onSelect={setSelectedFlight}
           />
         </section>
 
         {selectedFlight ? (
-          <BookingPanel userId={CURRENT_USER_ID} flight={selectedFlight} onBooked={handleBooked} />
+          <BookingPanel userId={currentUser.userId} flight={selectedFlight} onBooked={setLatestBooking} />
         ) : (
           <section style={{ textAlign: 'left' }}>
             <h2 style={{ marginTop: 0 }}>จองเที่ยวบิน</h2>
@@ -114,8 +127,6 @@ function App() {
         <section style={{ textAlign: 'left' }} aria-label="latest-booking">
           <h2 style={{ marginTop: 0 }}>การจองล่าสุด</h2>
           <div>Booking ID: {latestBooking.bookingId}</div>
-          <div>Flight ID: {latestBooking.flightId}</div>
-          <div>Seats: {latestBooking.seatCount}</div>
           <div>Status: {latestBooking.status}</div>
         </section>
       ) : null}
