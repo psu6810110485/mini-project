@@ -13,9 +13,10 @@ const DEFAULT_SEARCH: FlightSearchParams = {
 }
 
 export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormProps) {
-  const [form, setForm] = useState<FlightSearchParams>(initialValue ?? DEFAULT_SEARCH)
+  // ใช้ค่าเริ่มต้นหรือค่าว่างเพื่อป้องกัน undefined
+  const [form, setForm] = useState<FlightSearchParams>(initialValue || DEFAULT_SEARCH)
 
-  // ✅ แก้ตัวแดง: ใช้ (ค่า || '') เพื่อป้องกัน undefined ก่อน .trim()
+  // ✅ แก้ตัวแดง: ดักค่า undefined ก่อน .trim()
   const canSearch = useMemo(() => {
     const origin = form.origin || '';
     const destination = form.destination || '';
@@ -37,18 +38,21 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="flight-search" className="glass-panel" style={{ padding: '20px', textAlign: 'left' }}>
-      <h2 style={{ fontFamily: 'Chonburi, serif', marginTop: 0, marginBottom: '20px' }}>✈️ ค้นหาเที่ยวบิน</h2>
+    <form onSubmit={handleSubmit} aria-label="flight-search" className="glass-panel" style={{ padding: '25px', textAlign: 'left' }}>
+      {/* ✅ เพิ่มสีทอง (var(--rich-gold)) ให้หัวข้อเข้ากับธีม */}
+      <h2 style={{ fontFamily: 'Chonburi, serif', marginTop: 0, marginBottom: '20px', color: 'var(--rich-gold)' }}>
+        ✈️ ค้นหาเที่ยวบิน
+      </h2>
       
       <div style={{ display: 'grid', gap: 15, gridTemplateColumns: '1fr 1fr' }}>
         
-        {/* ✅ เปลี่ยนเป็น Dropdown เลือกสนามบินต้นทาง */}
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>ต้นทาง (Origin)</span>
+        {/* ✅ 1. ต้นทาง (Origin) แบบ Dropdown */}
+        <label style={{ display: 'grid', gap: 8 }}>
+          <span style={{ fontFamily: 'Prompt' }}>ต้นทาง</span>
           <select
             value={form.origin || ''}
             onChange={(e) => updateField('origin', e.target.value)}
-            style={{ padding: '12px', borderRadius: '10px', border: 'none', width: '100%' }}
+            style={{ padding: '12px', borderRadius: '12px', border: 'none', width: '100%', fontSize: '1rem', fontFamily: 'Prompt' }}
           >
             <option value="">เลือกสนามบินต้นทาง</option>
             <option value="BKK">กรุงเทพฯ (สุวรรณภูมิ)</option>
@@ -59,13 +63,13 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
           </select>
         </label>
 
-        {/* ✅ เปลี่ยนเป็น Dropdown เลือกสนามบินปลายทาง */}
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>ปลายทาง (Destination)</span>
+        {/* ✅ 2. ปลายทาง (Destination) แบบ Dropdown */}
+        <label style={{ display: 'grid', gap: 8 }}>
+          <span style={{ fontFamily: 'Prompt' }}>ปลายทาง</span>
           <select
             value={form.destination || ''}
             onChange={(e) => updateField('destination', e.target.value)}
-            style={{ padding: '12px', borderRadius: '10px', border: 'none', width: '100%' }}
+            style={{ padding: '12px', borderRadius: '12px', border: 'none', width: '100%', fontSize: '1rem', fontFamily: 'Prompt' }}
           >
             <option value="">เลือกสนามบินปลายทาง</option>
             <option value="BKK">กรุงเทพฯ (สุวรรณภูมิ)</option>
@@ -76,14 +80,14 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
           </select>
         </label>
 
-        {/* ช่องวันที่ */}
-        <label style={{ display: 'grid', gap: 6, gridColumn: '1 / span 2' }}>
-          <span>วันที่เดินทาง (Date)</span>
+        {/* ✅ 3. วันที่เดินทาง (Date) */}
+        <label style={{ display: 'grid', gap: 8, gridColumn: '1 / span 2' }}>
+          <span style={{ fontFamily: 'Prompt' }}>วันที่เดินทาง</span>
           <input
             type="date"
             value={form.travelDate || ''}
             onChange={(e) => updateField('travelDate', e.target.value)}
-            style={{ padding: '12px', borderRadius: '10px', border: 'none', width: '100%' }}
+            style={{ padding: '12px', borderRadius: '12px', border: 'none', width: '100%', fontSize: '1rem', fontFamily: 'Prompt' }}
           />
         </label>
 
