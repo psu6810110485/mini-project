@@ -4,40 +4,42 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Flight } from '../entities/flight.entity';
+import { ApiTags, ApiBody, ApiBearerAuth } from '@nestjs/swagger'; 
+import { CreateFlightDto } from './dto/create-flight.dto'; // ✅ นำเข้าจากไฟล์ที่คุณสร้าง
 
+@ApiTags('Flights')
+@ApiBearerAuth()
 @Controller('flights')
 export class FlightsController {
   constructor(private flightsService: FlightsService) {}
 
-  // 1. ดูเที่ยวบินทั้งหมด (ใครก็ดูได้)
   @Get()
-  async getAll(): Promise<Flight[]> { // ระบุเป็น Promise<Flight[]> เพื่อแก้ Error ในรูป
+  async getAll(): Promise<Flight[]> {
     return await this.flightsService.findAll();
   }
 
-  // 2. ดูเที่ยวบินทีละอัน (ระบุ id ใน URL)
   @Get(':id')
   async getOne(@Param('id', ParseIntPipe) id: number): Promise<Flight> {
     return await this.flightsService.findOne(id);
   }
 
-  // 3. สร้างเที่ยวบินใหม่ (เฉพาะ ADMIN เท่านั้น)
   @Post()
+  @ApiBody({ type: CreateFlightDto }) 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async create(@Body() flightData: any): Promise<Flight> {
+  async create(@Body() flightData: CreateFlightDto): Promise<Flight> {
+    // ✅ ส่งข้อมูลไปยัง Service เพื่อบันทึกลงฐานข้อมูล
     return await this.flightsService.create(flightData);
   }
 
-  // 4. แก้ไขข้อมูลเที่ยวบิน (เฉพาะ ADMIN เท่านั้น)
   @Patch(':id')
+  @ApiBody({ type: CreateFlightDto })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateData: any): Promise<Flight> {
     return await this.flightsService.update(id, updateData);
   }
 
-  // 5. ลบเที่ยวบิน (เฉพาะ ADMIN เท่านั้น)
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')

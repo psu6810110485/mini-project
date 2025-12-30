@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Flight } from '../entities/flight.entity';
+import { CreateFlightDto } from './dto/create-flight.dto'; // ✅ นำเข้า DTO
 
 @Injectable()
 export class FlightsService {
@@ -14,7 +15,6 @@ export class FlightsService {
     return await this.flightRepository.find();
   }
 
-  // จุดที่ 1: ตรวจสอบว่ามีบรรทัดดึงข้อมูลจาก DB หรือยัง (ในรูปก่อนหน้าคุณลืมบรรทัดนี้ครับ)
   async findOne(flight_id: number): Promise<Flight> {
     const flight = await this.flightRepository.findOne({ where: { flight_id } });
     if (!flight) {
@@ -23,10 +23,18 @@ export class FlightsService {
     return flight;
   }
 
-  // จุดที่ 2: แก้ตัวแดงที่บรรทัด 32 (จุดเจ้าปัญหา)
-  async create(flightData: Partial<Flight>): Promise<Flight> {
-    // เราใช้ as Flight เพื่อบอก TypeScript ว่าข้อมูลนี้คือชิ้นเดียวแน่ๆ
-    const flight = this.flightRepository.create(flightData) as Flight; 
+  // ✅ แก้ไขปัญหา null value ใน column "flight_code"
+  async create(dto: CreateFlightDto): Promise<Flight> {
+    const flight = this.flightRepository.create({
+      flight_code: dto.flight_code,           // ✅ ใส่ค่าจาก Postman ลงใน Database
+      origin: dto.origin,
+      destination: dto.destination,
+      travel_date: new Date(dto.travelDate), // ✅ แปลง travelDate เป็น travel_date ของ DB
+      price: dto.price,
+      available_seats: dto.availableSeats,   // ✅ แปลง availableSeats เป็น available_seats ของ DB
+      status: 'Active'
+    });
+    
     return await this.flightRepository.save(flight);
   }
 
@@ -43,7 +51,6 @@ export class FlightsService {
     }
   }
 
-  // Business Logic: ตัดที่นั่งว่างตามโจทย์
   async decrementSeats(flight_id: number, count: number): Promise<void> {
     const flight = await this.findOne(flight_id); 
     if (flight.available_seats < count) {
