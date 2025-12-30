@@ -6,9 +6,8 @@ type FlightListProps = {
   onSelect: (flight: Flight) => void
 }
 
-// ✅ แก้ไขการคำนวณเงินให้รองรับทั้ง String และ Number เพื่อกัน NaN
-function formatMoney(value: any): string {
-  const amount = Number(value);
+function formatMoney(value: number | string): string {
+  const amount = Number(value); // แปลงเป็นตัวเลขเสมอ
   return new Intl.NumberFormat('th-TH', { 
     style: 'currency', 
     currency: 'THB',
@@ -20,61 +19,92 @@ export function FlightList({ flights, selectedFlightId, onSelect }: FlightListPr
   if (flights.length === 0) {
     return (
       <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
-        <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.7)' }}>✈️ ไม่พบเที่ยวบินที่ตรงเงื่อนไขในขณะนี้</p>
+        <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', fontFamily: 'Prompt' }}>✈️ ไม่พบเที่ยวบินที่ตรงเงื่อนไขในขณะนี้</p>
       </div>
     )
   }
 
   return (
-    <div style={{ display: 'grid', gap: '20px' }} aria-label="flight-results">
-      <h3 style={{ color: 'white', marginBottom: '10px' }}>✈️ ผลการค้นหา ({flights.length})</h3>
-      
-      {flights.map((f: any) => {
-        // ✅ เปลี่ยนจาก f.flightId เป็น f.flight_id ตาม Database
+    <div style={{ display: 'grid', gap: '15px' }} aria-label="flight-results">
+      {flights.map((f) => {
+        // ✅ ใช้ flight_id (snake_case)
         const isSelected = selectedFlightId === f.flight_id 
-        
-        // ✅ เปลี่ยนจาก f.availableSeats เป็น f.available_seats
+        // ✅ ใช้ available_seats (snake_case)
         const isAvailable = f.available_seats > 0 
 
         return (
           <button
+            // ✅ ใช้ flight_id
             key={f.flight_id}
             type="button"
             onClick={() => onSelect(f)}
             className={`flight-card-premium ${isSelected ? 'selected' : ''}`}
             style={{
+              textAlign: 'left',
+              padding: '0', // ให้ CSS จัดการ padding ภายใน
+              border: isSelected ? '2px solid var(--rich-gold)' : '1px solid rgba(197, 160, 89, 0.3)',
               opacity: isAvailable ? 1 : 0.6,
               cursor: isAvailable ? 'pointer' : 'not-allowed',
+              background: isSelected ? 'rgba(255,255,255, 0.95)' : 'rgba(255,255,255, 0.9)',
+              transition: 'all 0.3s ease',
+              width: '100%',
+              borderRadius: '15px',
+              overflow: 'hidden',
+              boxShadow: isSelected ? '0 10px 25px rgba(197, 160, 89, 0.4)' : '0 4px 10px rgba(0,0,0,0.1)'
             }}
             disabled={!isAvailable}
           >
-            <div className="card-content">
-              <div className="main-info">
-                <div className="flight-route">
-                  <span className="city">{f.origin}</span>
-                  <span className="plane-divider">✈️</span>
-                  <span className="city">{f.destination}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch' }}>
+              
+              {/* ส่วนข้อมูลเที่ยวบิน */}
+              <div style={{ padding: '20px', flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: '1.4rem', fontFamily: 'Chonburi', color: 'var(--royal-blue)', marginBottom: '8px' }}>
+                  {/* ✅ ใช้ flight_code */}
+                  {f.flight_code} <span style={{ color: '#ccc', margin: '0 5px' }}>|</span> {f.origin} ➝ {f.destination}
                 </div>
                 
-                <div className="flight-meta">
-                  {/* ✅ ใช้ f.flight_code และ f.travel_date ให้ตรงกับ Backend */}
-                  <span className="badge">Code: {f.flight_code}</span>
-                  <span className="info-text">
-                    📅 {new Date(f.travel_date).toLocaleDateString('th-TH', {
-                      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}
+                <div style={{ fontSize: '0.95rem', fontFamily: 'Prompt', color: '#555', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                  <span>
+                    {/* ✅ ใช้ travel_date */}
+                    📅 {new Date(f.travel_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  <span className={`seats-tag ${f.available_seats < 5 ? 'low' : ''}`}>
-                    💺 ว่าง {f.available_seats} ที่นั่ง
+                  <span style={{ color: f.available_seats < 5 ? '#e74c3c' : '#28a745', fontWeight: 'bold' }}>
+                    {/* ✅ ใช้ available_seats */}
+                    💺 ว่าง: {f.available_seats}
                   </span>
                 </div>
               </div>
 
-              <div className="price-section">
-                <div className="price-label">ราคาเริ่มต้น</div>
-                <div className="price-value">{formatMoney(f.price)}</div>
-                <div className="btn-book-ui">{isSelected ? 'เลือกอยู่' : 'เลือกเที่ยวบิน'}</div>
+              {/* ส่วนราคาและปุ่ม */}
+              <div style={{ 
+                  textAlign: 'center', 
+                  padding: '20px', 
+                  background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%)',
+                  borderLeft: '2px dashed #ccc',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  minWidth: '140px'
+              }}>
+                <div style={{ fontSize: '0.8rem', color: '#666', fontFamily: 'Prompt' }}>ราคาเริ่มต้น</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success-green)', fontFamily: 'Prompt' }}>
+                  {formatMoney(f.price)}
+                </div>
+                {isSelected && (
+                  <div style={{ 
+                      fontSize: '0.8rem', 
+                      color: 'white', 
+                      background: 'var(--rich-gold)', 
+                      padding: '2px 8px', 
+                      borderRadius: '10px',
+                      marginTop: '5px',
+                      fontFamily: 'Prompt'
+                  }}>
+                    เลือกอยู่ ✅
+                  </div>
+                )}
               </div>
+
             </div>
           </button>
         )
