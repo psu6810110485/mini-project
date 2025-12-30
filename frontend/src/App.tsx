@@ -1,6 +1,6 @@
 import './App.css'
 import { useMemo, useState, useEffect } from 'react'
-import { BookingPanel } from './components/BookingPanel'
+import BookingPanel from './components/BookingPanel' // ✅ ตรวจสอบว่า BookingPanel มี export default
 import { FlightList } from './components/FlightList'
 import { FlightSearchForm } from './components/FlightSearchForm'
 import { Login } from './components/Login' 
@@ -19,21 +19,20 @@ function App() {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
 
-  // 🛠️ แก้ไขปัญหา Persistence: เพิ่มตัวเช็ค "undefined" เพื่อป้องกันหน้าจอดำ
+  // 🛠️ ตรวจสอบ User จาก LocalStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
-    // ต้องเช็คทั้งค่าว่าง และคำว่า "undefined" ที่อาจค้างใน LocalStorage
     if (savedUser && savedUser !== "undefined") {
       try {
         setCurrentUser(JSON.parse(savedUser));
       } catch (error) {
         console.error("Error parsing user from localStorage", error);
-        localStorage.removeItem('user'); // ล้างทิ้งถ้าข้อมูลเสียหาย
+        localStorage.removeItem('user');
       }
     }
   }, []);
 
-  // ดึงข้อมูลเที่ยวบินเมื่อ Login สำเร็จ
+  // 🛠️ ดึงข้อมูลเที่ยวบิน
   useEffect(() => {
     const fetchFlights = async () => {
       try {
@@ -55,7 +54,7 @@ function App() {
 
   const handleDeleteFlight = (id: ID) => {
     if (window.confirm('คุณต้องการลบเที่ยวบินนี้ใช่หรือไม่?')) {
-      setFlights(flights.filter(f => f.flightId !== id));
+      setFlights(flights.filter(f => f.flight_id !== id));
     }
   };
 
@@ -63,8 +62,8 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setCurrentUser(null);
-    setSelectedFlight(null); // ล้างค่าเที่ยวบินที่เลือกไว้ด้วย
-    setLatestBooking(null);  // ล้างค่าการจองล่าสุด
+    setSelectedFlight(null);
+    setLatestBooking(null);
   };
 
   const filteredFlights = useMemo(() => {
@@ -75,9 +74,10 @@ function App() {
     return flights.filter((f) => {
       const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
       const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
+      
       const dateOk =
         travelDate.length === 0 ||
-        new Date(f.travelDate).toISOString().slice(0, 10) === travelDate
+        new Date(f.travel_date).toISOString().slice(0, 10) === travelDate
       return originOk && destOk && dateOk
     })
   }, [search.destination, search.origin, search.travelDate, flights])
@@ -87,7 +87,7 @@ function App() {
     return (
       <div className="App">
         <header style={{ padding: '20px' }}>
-          <h1>ระบบจองตั๋วเครื่องบิน</h1>
+          <h1 className="system-title">ระบบจองตั๋วเครื่องบิน</h1>
         </header>
         <Login onLoginSuccess={(user) => setCurrentUser(user)} />
       </div>
@@ -96,19 +96,19 @@ function App() {
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <header style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', borderBottom: '1px solid #eee' }}>
+      <header className="glass-panel" style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 30px', marginBottom: '10px' }}>
         <div>
-          <h1 style={{ margin: 0 }}>ระบบจองตั๋วเครื่องบิน</h1>
-          <p style={{ margin: 0, opacity: 0.8 }}>
+          <h1 style={{ margin: 0, fontSize: '1.8rem', fontFamily: 'Chonburi' }}>ระบบจองตั๋วเครื่องบิน</h1>
+          <p style={{ margin: 0, opacity: 0.9, fontFamily: 'Prompt' }}>
             สวัสดีคุณ <strong>{currentUser.name}</strong> | สิทธิ์: <strong>{currentUser.role}</strong>
           </p>
         </div>
-        <button onClick={handleLogout} style={{ height: 'fit-content', backgroundColor: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>
+        <button onClick={handleLogout} style={{ height: 'fit-content', backgroundColor: '#ff4d4f', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '50px', cursor: 'pointer', fontFamily: 'Prompt', fontWeight: 'bold' }}>
           ออกจากระบบ
         </button>
       </header>
 
-      {/* Admin View: แสดงส่วนจัดการเที่ยวบินเฉพาะ ADMIN เท่านั้น */}
+      {/* Admin View */}
       {currentUser.role === 'ADMIN' && (
         <AdminFlightManager 
           flights={flights} 
@@ -119,37 +119,49 @@ function App() {
 
       <FlightSearchForm onSearch={setSearch} />
 
-      <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start', padding: '0 20px' }}>
+      <div style={{ display: 'grid', gap: 20, gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start', padding: '0 10px' }}>
         <section style={{ textAlign: 'left' }}>
-          <h2 style={{ marginTop: 0 }}>ผลการค้นหา ({filteredFlights.length})</h2>
+          <h2 style={{ marginTop: 0, color: 'var(--rich-gold)', fontFamily: 'Chonburi' }}>ผลการค้นหา ({filteredFlights.length})</h2>
+          
           <FlightList
             flights={filteredFlights}
-            selectedFlightId={selectedFlight?.flightId}
+            selectedFlightId={selectedFlight?.flight_id}
             onSelect={setSelectedFlight}
           />
         </section>
 
         <section style={{ textAlign: 'left' }}>
           {selectedFlight ? (
-            <BookingPanel userId={currentUser.userId} flight={selectedFlight} onBooked={(booking) => {
-              setLatestBooking(booking);
-              // อัปเดตที่นั่งว่างใน State หน้าบ้านทันทีเพื่อให้ UI เปลี่ยน (Business Logic 20 คะแนน)
-              setFlights(flights.map(f => f.flightId === selectedFlight.flightId ? { ...f, availableSeats: f.availableSeats - 1 } : f));
-            }} />
+            /* ✅ แก้ไขจุดที่แดง: ส่ง Props ให้ครบ (userId, flight, onBooked) */
+            <BookingPanel 
+                userId={currentUser.user_id}   // ส่ง userId ของ user ปัจจุบัน
+                flight={selectedFlight}        // ส่ง flight ที่เลือก
+                onBooked={(booking) => {       // ใช้ onBooked แทน onConfirm
+                   // รับ Object booking ที่สร้างสำเร็จมาจาก BookingPanel
+                   setLatestBooking(booking);
+                   
+                   // อัปเดตจำนวนที่นั่งว่างในรายการเที่ยวบินทันที (Client-side update)
+                   setFlights(flights.map(f => 
+                       f.flight_id === booking.flight_id 
+                       ? { ...f, available_seats: f.available_seats - booking.seat_count } 
+                       : f
+                   ));
+                }} 
+            />
           ) : (
-            <div>
-              <h2 style={{ marginTop: 0 }}>จองเที่ยวบิน</h2>
-              <p>เลือกเที่ยวบินทางซ้ายเพื่อเริ่มจอง</p>
+            <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
+              <h2 style={{ marginTop: 0, fontFamily: 'Chonburi', color: '#ccc' }}>จองเที่ยวบิน</h2>
+              <p style={{ fontFamily: 'Prompt' }}>👈 กรุณาเลือกเที่ยวบินทางซ้ายเพื่อเริ่มจอง</p>
             </div>
           )}
         </section>
       </div>
 
       {latestBooking && (
-        <section style={{ textAlign: 'left', padding: '20px', backgroundColor: '#f6ffed', border: '1px solid #b7eb8f', margin: '0 20px' }} aria-label="latest-booking">
-          <h2 style={{ marginTop: 0, color: '#52c41a' }}>🎉 การจองล่าสุดสำเร็จ!</h2>
-          <div><strong>Booking ID:</strong> {latestBooking.bookingId}</div>
-          <div><strong>สถานะ:</strong> {latestBooking.status}</div>
+        <section style={{ textAlign: 'left', padding: '20px', backgroundColor: 'rgba(40, 167, 69, 0.2)', border: '1px solid #28a745', borderRadius: '15px', margin: '20px' }} aria-label="latest-booking">
+          <h2 style={{ marginTop: 0, color: '#28a745', fontFamily: 'Chonburi' }}>🎉 การจองล่าสุดสำเร็จ!</h2>
+          <div style={{ fontFamily: 'Prompt' }}><strong>Booking ID:</strong> {latestBooking.booking_id}</div>
+          <div style={{ fontFamily: 'Prompt' }}><strong>สถานะ:</strong> {latestBooking.status}</div>
         </section>
       )}
     </div>

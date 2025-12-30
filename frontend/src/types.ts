@@ -1,4 +1,4 @@
-// types.ts
+// frontend/src/types.ts
 
 export type ID = number
 
@@ -37,82 +37,46 @@ export interface RegisterRequest {
   password: string
 }
 
-// ---------- Domain Models (ใช้ภายใน App - camelCase) ----------
+// ---------- Domain Models (เปลี่ยนเป็น snake_case ให้ตรงกับ DB) ----------
+
 export interface User {
-  userId: ID
-  name: string
-  email: string
-  role: UserRole // เพิ่ม Role สำหรับแบ่งสิทธิ์ ADMIN/USER [จากข้อกำหนด Authorization]
+  user_id: ID;       // ✅ แก้จาก userId
+  name: string;
+  email: string;
+  role: UserRole;
 }
 
 export interface Flight {
-  flightId: ID
-  flightCode: string
-  origin: string
-  destination: string
-  travelDate: IsoDateTimeString
-  price: number
-  availableSeats: number
-  status: 'Active' | 'Cancelled' // เพิ่มสถานะเที่ยวบินสำหรับ Admin จัดการ
+  flight_id: ID;           // ✅ แก้จาก flightId
+  flight_code: string;     // ✅ แก้จาก flightCode
+  origin: string;
+  destination: string;
+  travel_date: IsoDateTimeString; // ✅ แก้จาก travelDate (สำคัญมาก!)
+  price: number | string;  // รองรับทั้ง string/number กันเหนียว
+  available_seats: number; // ✅ แก้จาก availableSeats
+  status: 'Active' | 'Cancelled' | string;
 }
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled'
 
 export interface Booking {
-  bookingId: ID
-  userId: ID
-  flightId: ID
-  seatCount: number
-  totalPrice: number
-  status: BookingStatus
-  bookingTime: IsoDateTimeString
-  // สามารถเพิ่มข้อมูล Flight สั้นๆ เพื่อแสดงในหน้าประวัติการจองได้
-  flightDetails?: {
-    flightCode: string
-    origin: string
-    destination: string
-  }
-}
-
-// ---------- DTOs (Data Transfer Objects - snake_case ตาม API/Database) ----------
-// ใช้สำหรับรับข้อมูลจาก NestJS API โดยตรง
-export interface UserDto {
-  user_id: ID
-  name: string
-  email: string
-  role: UserRole
-}
-
-export interface FlightDto {
-  flight_id: ID
-  flight_code: string
-  origin: string
-  destination: string
-  travel_date: IsoDateTimeString
-  price: number
-  available_seats: number
-  status: string
-}
-
-export interface BookingDto {
-  booking_id: ID
-  user_id: ID
-  flight_id: ID
-  seat_count: number
-  total_price: number
-  status: BookingStatus
-  booking_time: IsoDateTimeString
+  booking_id: ID;    // ✅ แก้จาก bookingId
+  user_id: ID;       // ✅ แก้จาก userId
+  flight_id: ID;     // ✅ แก้จาก flightId
+  seat_count: number;// ✅ แก้จาก seatCount
+  total_price: number;// ✅ แก้จาก totalPrice
+  status: BookingStatus;
+  booking_time: IsoDateTimeString; // ✅ แก้จาก bookingTime
 }
 
 // ---------- UI / Frontend-Specific Types ----------
 export interface FlightSearchParams {
   origin?: string
   destination?: string
-  travelDate?: string
+  travelDate?: string // อันนี้เป็น State ของฟอร์ม เก็บไว้แบบเดิมได้
 }
 
-// ตัวอย่าง Type สำหรับสร้าง Booking ใหม่
 export interface CreateBookingRequest {
-  flightId: ID
-  seatCount: number
+  flight_id: ID;     // ✅ แก้ให้ตรง Backend
+  seat_count: number;// ✅ แก้ให้ตรง Backend
 }
