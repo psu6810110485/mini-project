@@ -1,6 +1,6 @@
 import './App.css'
 import { useMemo, useState, useEffect } from 'react'
-import BookingPanel from './components/BookingPanel' // ✅ ตรวจสอบว่า BookingPanel มี export default
+import BookingPanel from './components/BookingPanel' 
 import { FlightList } from './components/FlightList'
 import { FlightSearchForm } from './components/FlightSearchForm'
 import { Login } from './components/Login' 
@@ -32,12 +32,29 @@ function App() {
     }
   }, []);
 
-  // 🛠️ ดึงข้อมูลเที่ยวบิน
+  // 🛠️ ดึงข้อมูลเที่ยวบิน (พร้อมตัวแปลงข้อมูลแก้ปัญหา No Flights Found)
   useEffect(() => {
     const fetchFlights = async () => {
       try {
-        const response = await api.get<Flight[]>('/flights');
-        setFlights(response.data);
+        // ใช้ any[] รับมาก่อน เพราะ API อาจส่ง camelCase มา
+        const response = await api.get<any[]>('/flights');
+        
+        // ✅ Magic Fix: แปลงข้อมูลจาก Backend ให้เป็น snake_case ตามที่คุณต้องการ
+        const mappedFlights: Flight[] = response.data.map((f) => ({
+          flight_id: f.flight_id || f.flightId,          // รับได้ทั้งสองแบบ
+          flight_code: f.flight_code || f.flightCode,
+          origin: f.origin,
+          destination: f.destination,
+          travel_date: f.travel_date || f.travelDate,    // แก้ Invalid Date
+          price: f.price,
+          available_seats: f.available_seats || f.availableSeats, // แก้จำนวนที่นั่งหาย
+          status: f.status || 'Active'
+        }));
+
+        setFlights(mappedFlights);
+        
+        // ✅ เรียก setSearch เพื่อ trigger การแสดงผลทันที
+        setSearch({ origin: '', destination: '', travelDate: '' });
       } catch (error) {
         console.error("Failed to fetch flights", error);
       }
@@ -72,12 +89,17 @@ function App() {
     const travelDate = search.travelDate ?? ''
 
     return flights.filter((f) => {
+      // ✅ ถ้าไม่ได้เลือกต้นทาง ให้ผ่านทุกเที่ยวบิน
       const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
+      
+      // ✅ ถ้าไม่ได้เลือกปลายทาง ให้ผ่านทุกเที่ยวบิน
       const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
       
-      const dateOk =
-        travelDate.length === 0 ||
-        new Date(f.travel_date).toISOString().slice(0, 10) === travelDate
+      // ✅ แก้การเทียบวันที่: ป้องกัน undefined
+      const flightDate = f.travel_date ? new Date(f.travel_date).toISOString().slice(0, 10) : '';
+      // ✅ ถ้าไม่ได้เลือกวันที่ ให้ผ่านทุกเที่ยวบิน
+      const dateOk = travelDate.length === 0 || flightDate === travelDate;
+      
       return originOk && destOk && dateOk
     })
   }, [search.destination, search.origin, search.travelDate, flights])
@@ -132,15 +154,13 @@ function App() {
 
         <section style={{ textAlign: 'left' }}>
           {selectedFlight ? (
-            /* ✅ แก้ไขจุดที่แดง: ส่ง Props ให้ครบ (userId, flight, onBooked) */
             <BookingPanel 
-                userId={currentUser.user_id}   // ส่ง userId ของ user ปัจจุบัน
-                flight={selectedFlight}        // ส่ง flight ที่เลือก
-                onBooked={(booking) => {       // ใช้ onBooked แทน onConfirm
-                   // รับ Object booking ที่สร้างสำเร็จมาจาก BookingPanel
+                userId={currentUser.user_id}   
+                flight={selectedFlight}        
+                onBooked={(booking) => {       
                    setLatestBooking(booking);
                    
-                   // อัปเดตจำนวนที่นั่งว่างในรายการเที่ยวบินทันที (Client-side update)
+                   // อัปเดต Client-side
                    setFlights(flights.map(f => 
                        f.flight_id === booking.flight_id 
                        ? { ...f, available_seats: f.available_seats - booking.seat_count } 

@@ -27,21 +27,18 @@ export function FlightList({ flights, selectedFlightId, onSelect }: FlightListPr
   return (
     <div style={{ display: 'grid', gap: '15px' }} aria-label="flight-results">
       {flights.map((f) => {
-        // ✅ ใช้ flight_id (snake_case)
         const isSelected = selectedFlightId === f.flight_id 
-        // ✅ ใช้ available_seats (snake_case)
         const isAvailable = f.available_seats > 0 
 
         return (
           <button
-            // ✅ ใช้ flight_id
             key={f.flight_id}
             type="button"
             onClick={() => onSelect(f)}
             className={`flight-card-premium ${isSelected ? 'selected' : ''}`}
             style={{
               textAlign: 'left',
-              padding: '0', // ให้ CSS จัดการ padding ภายใน
+              padding: '0', 
               border: isSelected ? '2px solid var(--rich-gold)' : '1px solid rgba(197, 160, 89, 0.3)',
               opacity: isAvailable ? 1 : 0.6,
               cursor: isAvailable ? 'pointer' : 'not-allowed',
@@ -55,56 +52,30 @@ export function FlightList({ flights, selectedFlightId, onSelect }: FlightListPr
             disabled={!isAvailable}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch' }}>
-              
-              {/* ส่วนข้อมูลเที่ยวบิน */}
               <div style={{ padding: '20px', flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '1.4rem', fontFamily: 'Chonburi', color: 'var(--royal-blue)', marginBottom: '8px' }}>
-                  {/* ✅ ใช้ flight_code */}
                   {f.flight_code} <span style={{ color: '#ccc', margin: '0 5px' }}>|</span> {f.origin} ➝ {f.destination}
                 </div>
-                
                 <div style={{ fontSize: '0.95rem', fontFamily: 'Prompt', color: '#555', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                   <span>
-                    {/* ✅ ใช้ travel_date */}
                     📅 {new Date(f.travel_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <span style={{ color: f.available_seats < 5 ? '#e74c3c' : '#28a745', fontWeight: 'bold' }}>
-                    {/* ✅ ใช้ available_seats */}
                     💺 ว่าง: {f.available_seats}
                   </span>
                 </div>
               </div>
-
-              {/* ส่วนราคาและปุ่ม */}
-              <div style={{ 
-                  textAlign: 'center', 
-                  padding: '20px', 
-                  background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%)',
-                  borderLeft: '2px dashed #ccc',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  minWidth: '140px'
-              }}>
+              <div style={{ textAlign: 'center', padding: '20px', background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%)', borderLeft: '2px dashed #ccc', minWidth: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div style={{ fontSize: '0.8rem', color: '#666', fontFamily: 'Prompt' }}>ราคาเริ่มต้น</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success-green)', fontFamily: 'Prompt' }}>
                   {formatMoney(f.price)}
                 </div>
                 {isSelected && (
-                  <div style={{ 
-                      fontSize: '0.8rem', 
-                      color: 'white', 
-                      background: 'var(--rich-gold)', 
-                      padding: '2px 8px', 
-                      borderRadius: '10px',
-                      marginTop: '5px',
-                      fontFamily: 'Prompt'
-                  }}>
+                  <div style={{ fontSize: '0.8rem', color: 'white', background: 'var(--rich-gold)', padding: '2px 8px', borderRadius: '10px', marginTop: '5px', fontFamily: 'Prompt' }}>
                     เลือกอยู่ ✅
                   </div>
                 )}
               </div>
-
             </div>
           </button>
         )

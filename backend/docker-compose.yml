@@ -3,9 +3,10 @@ services:
   db:
     image: postgres:15
     container_name: flight-booking-db
+    restart: always  # ✅ เพิ่มบรรทัดนี้: จะเปิด DB เองอัตโนมัติทุกครั้งที่เปิดคอม
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: admin           # ⚠️ ต้องไปแก้ใน .env ให้เป็น admin ด้วยนะ
+      POSTGRES_PASSWORD: password123 # ⚠️ ต้องไปแก้ใน .env ให้เป็น password123
       POSTGRES_DB: flight_booking_db
     ports:
       - "5432:5432"

@@ -15,23 +15,19 @@ function nowIso(): IsoDateTimeString {
   return new Date().toISOString()
 }
 
-// ✅ เปลี่ยนเป็น export default เพื่อให้ App.tsx เรียกใช้ได้ถูกต้อง
 export default function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) {
   const [seatCount, setSeatCount] = useState<number>(1)
   const [status, setStatus] = useState<BookingStatus>('pending')
 
-  // รีเซ็ตเมื่อเปลี่ยนเที่ยวบินใหม่
   useEffect(() => {
     setSeatCount(1);
     setStatus('pending');
   }, [flight]);
 
-  // ✅ แก้: ใช้ available_seats (snake_case)
   const maxSeats = Math.max(0, flight.available_seats)
 
   const totalPrice = useMemo(() => {
     const normalizedSeats = Math.min(Math.max(seatCount, 1), Math.max(maxSeats, 1))
-    // ✅ แก้: แปลง price เป็น Number เสมอกันเหนียว
     return computeTotalPrice(flight.price, normalizedSeats)
   }, [flight.price, maxSeats, seatCount])
 
@@ -43,11 +39,10 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
   function handleBook() {
     if (maxSeats <= 0) return
 
-    // ✅ แก้: สร้าง Object Booking ให้เป็น snake_case ตาม types.ts
     const booking: Booking = {
       booking_id: Date.now(),
       user_id: userId,
-      flight_id: flight.flight_id, // snake_case
+      flight_id: flight.flight_id,
       seat_count: Math.min(Math.max(seatCount, 1), Math.max(maxSeats, 1)),
       total_price: totalPrice,
       status: 'confirmed',
@@ -68,14 +63,13 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
             {flight.flight_code} — {flight.origin} ➝ {flight.destination}
           </div>
           <div style={{ fontSize: 14, fontFamily: 'Prompt', marginTop: '5px' }}>
-             {/* ✅ แก้: ใช้ travel_date (snake_case) */}
-             วันที่: {new Date(flight.travel_date).toLocaleDateString('th-TH', { 
+             {/* ✅ ป้องกันกรณีวันที่เป็นค่าว่าง */}
+             วันที่: {flight.travel_date ? new Date(flight.travel_date).toLocaleDateString('th-TH', { 
                 day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
-             })}
+             }) : 'ระบุวันเดินทาง'}
           </div>
         </div>
 
-        {/* ส่วนเลือกที่นั่งพร้อมปุ่ม +/- */}
         <div style={{ fontFamily: 'Prompt' }}>
           <label style={{ display: 'block', marginBottom: '8px' }}>จำนวนที่นั่ง</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
