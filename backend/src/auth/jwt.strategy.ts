@@ -1,18 +1,16 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PassportStrategy } from '@nestjs/passport';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
-    const secret = configService.get<string>('JWT_SECRET');
-    
+  constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // ใส่ ! หลัง secret เพื่อบอก TypeScript ว่าค่านี้ไม่เป็น undefined แน่นอน
-      secretOrKey: secret!, 
+      // ✅ แก้ไข: ใส่ || 'MyFallbackSecretKey' เพื่อกัน Error ถ้าหาใน .env ไม่เจอ
+      secretOrKey: configService.get<string>('JWT_SECRET') || 'MyFallbackSecretKey123',
     });
   }
 

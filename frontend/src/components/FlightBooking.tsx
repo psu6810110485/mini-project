@@ -1,5 +1,3 @@
-import React from 'react';
-
 // แม่แบบการ์ดตั๋วเครื่องบินแบบ Premium
 const FlightBooking = ({ flight }: { flight: any }) => {
   const formatDate = (dateStr: string) => {

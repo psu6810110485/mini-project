@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import type { Booking, BookingStatus, Flight, ID, IsoDateTimeString } from '../types'
+import type { Booking, Flight, ID, IsoDateTimeString } from '../types'
 
 type BookingPanelProps = {
   userId: ID
@@ -17,11 +17,9 @@ function nowIso(): IsoDateTimeString {
 
 export default function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) {
   const [seatCount, setSeatCount] = useState<number>(1)
-  const [status, setStatus] = useState<BookingStatus>('pending')
 
   useEffect(() => {
     setSeatCount(1);
-    setStatus('pending');
   }, [flight]);
 
   const maxSeats = Math.max(0, flight.available_seats)
@@ -49,7 +47,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
       booking_time: nowIso(),
     }
 
-    setStatus('confirmed')
     onBooked(booking)
   }
 

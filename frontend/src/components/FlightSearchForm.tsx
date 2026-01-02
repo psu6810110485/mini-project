@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { FlightSearchParams } from '../types'
 
 type FlightSearchFormProps = {
@@ -14,11 +14,6 @@ const DEFAULT_SEARCH: FlightSearchParams = {
 
 export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormProps) {
   const [form, setForm] = useState<FlightSearchParams>(initialValue || DEFAULT_SEARCH)
-
-  const canSearch = useMemo(() => {
-    // ✅ เปลี่ยนเป็นให้ค้นหาได้แม้ไม่ใส่ข้อมูลครบ (ให้แสดงทุกเที่ยวบิน)
-    return true
-  }, [])
 
   function updateField<K extends keyof FlightSearchParams>(key: K, value: FlightSearchParams[K]) {
     const updatedForm = { ...form, [key]: value }

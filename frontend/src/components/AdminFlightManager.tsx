@@ -3,8 +3,8 @@ import type { Flight, ID } from '../types';
 
 interface AdminFlightManagerProps {
   flights: Flight[];
-  onAddFlight: (flight: Flight) => void;
-  onDeleteFlight: (id: ID) => void;
+  onAddFlight: (flight: Flight) => Promise<void> | void;
+  onDeleteFlight: (id: ID) => void | Promise<void>;
 }
 
 export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights, onAddFlight, onDeleteFlight }) => {
@@ -19,7 +19,7 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
     status: 'Active'
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // ✅ 2. สร้าง Object ใหม่แบบ snake_case
@@ -35,19 +35,24 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
       status: 'Active'
     };
 
-    onAddFlight(flightToAdd);
-    
-    // รีเซ็ตฟอร์ม
-    setNewFlight({
-      flight_code: '',
-      origin: '',
-      destination: '',
-      travel_date: '',
-      price: 0,
-      available_seats: 0,
-      status: 'Active'
-    });
-    alert('✅ เพิ่มเที่ยวบินเรียบร้อย!');
+    try {
+      await onAddFlight(flightToAdd);
+
+      // รีเซ็ตฟอร์ม
+      setNewFlight({
+        flight_code: '',
+        origin: '',
+        destination: '',
+        travel_date: '',
+        price: 0,
+        available_seats: 0,
+        status: 'Active'
+      });
+      alert('✅ เพิ่มเที่ยวบินเรียบร้อย!');
+    } catch (error) {
+      console.error('Create flight failed', error);
+      alert('เพิ่มเที่ยวบินไม่สำเร็จ (ตรวจสอบว่า Login เป็น ADMIN และ Backend ทำงานอยู่)');
+    }
   };
 
   return (

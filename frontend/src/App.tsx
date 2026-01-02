@@ -1,5 +1,5 @@
 import './App.css'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import BookingPanel from './components/BookingPanel' 
 import { FlightList } from './components/FlightList'
 import { FlightSearchForm } from './components/FlightSearchForm'
@@ -7,6 +7,19 @@ import { Login } from './components/Login'
 import { AdminFlightManager } from './components/AdminFlightManager'
 import api from './api/axios' 
 import type { Booking, Flight, FlightSearchParams, User, ID } from './types'
+
+function mapFlightFromApi(raw: any): Flight {
+  return {
+    flight_id: raw.flight_id ?? raw.flightId,
+    flight_code: raw.flight_code ?? raw.flightCode,
+    origin: raw.origin,
+    destination: raw.destination,
+    travel_date: raw.travel_date ?? raw.travelDate,
+    price: raw.price,
+    available_seats: raw.available_seats ?? raw.availableSeats,
+    status: raw.status ?? 'Active',
+  }
+}
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -32,48 +45,56 @@ function App() {
     }
   }, []);
 
-  // 🛠️ ดึงข้อมูลเที่ยวบิน (พร้อมตัวแปลงข้อมูลแก้ปัญหา No Flights Found)
+  const fetchFlights = useCallback(async () => {
+    try {
+      const response = await api.get<any[]>('/flights')
+      const mappedFlights: Flight[] = response.data.map(mapFlightFromApi)
+      setFlights(mappedFlights)
+      setSearch({ origin: '', destination: '', travelDate: '' })
+    } catch (error) {
+      console.error('Failed to fetch flights', error)
+    }
+  }, [])
+
+  // 🛠️ ดึงข้อมูลเที่ยวบินใหม่ทุกครั้งที่เข้า/รีเฟรชหลังล็อกอิน
   useEffect(() => {
-    const fetchFlights = async () => {
-      try {
-        // ใช้ any[] รับมาก่อน เพราะ API อาจส่ง camelCase มา
-        const response = await api.get<any[]>('/flights');
-        
-        // ✅ Magic Fix: แปลงข้อมูลจาก Backend ให้เป็น snake_case ตามที่คุณต้องการ
-        const mappedFlights: Flight[] = response.data.map((f) => ({
-          flight_id: f.flight_id || f.flightId,          // รับได้ทั้งสองแบบ
-          flight_code: f.flight_code || f.flightCode,
-          origin: f.origin,
-          destination: f.destination,
-          travel_date: f.travel_date || f.travelDate,    // แก้ Invalid Date
-          price: f.price,
-          available_seats: f.available_seats || f.availableSeats, // แก้จำนวนที่นั่งหาย
-          status: f.status || 'Active'
-        }));
-
-        setFlights(mappedFlights);
-        
-        // ✅ เรียก setSearch เพื่อ trigger การแสดงผลทันที
-        setSearch({ origin: '', destination: '', travelDate: '' });
-      } catch (error) {
-        console.error("Failed to fetch flights", error);
-      }
-    };
-
     if (currentUser) {
-      fetchFlights();
+      fetchFlights()
     }
-  }, [currentUser]);
+  }, [currentUser, fetchFlights])
 
-  const handleAddFlight = (newFlight: Flight) => {
-    setFlights([newFlight, ...flights]);
-  };
+  const handleAddFlight = async (newFlight: Flight) => {
+    try {
+      // Backend ใช้ DTO แบบ camelCase: travelDate / availableSeats
+      const payload = {
+        flight_code: newFlight.flight_code,
+        origin: newFlight.origin,
+        destination: newFlight.destination,
+        travelDate: newFlight.travel_date,
+        price: Number(newFlight.price),
+        availableSeats: Number(newFlight.available_seats),
+      }
 
-  const handleDeleteFlight = (id: ID) => {
-    if (window.confirm('คุณต้องการลบเที่ยวบินนี้ใช่หรือไม่?')) {
-      setFlights(flights.filter(f => f.flight_id !== id));
+      const response = await api.post<any>('/flights', payload)
+      const created = mapFlightFromApi(response.data)
+      setFlights((prev) => [created, ...prev.filter((f) => f.flight_id !== created.flight_id)])
+    } catch (error) {
+      console.error('Failed to create flight', error)
+      throw error
     }
-  };
+  }
+
+  const handleDeleteFlight = async (id: ID) => {
+    if (!window.confirm('คุณต้องการลบเที่ยวบินนี้ใช่หรือไม่?')) return
+
+    try {
+      await api.delete(`/flights/${id}`)
+      setFlights((prev) => prev.filter((f) => f.flight_id !== id))
+    } catch (error) {
+      console.error('Failed to delete flight', error)
+      alert('ลบเที่ยวบินไม่สำเร็จ (ตรวจสอบสิทธิ์/การเชื่อมต่อ Backend)')
+    }
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token');
