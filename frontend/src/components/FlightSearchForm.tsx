@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { FlightSearchParams } from '../types'
 
 type FlightSearchFormProps = {
@@ -15,10 +15,13 @@ const DEFAULT_SEARCH: FlightSearchParams = {
 export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormProps) {
   const [form, setForm] = useState<FlightSearchParams>(initialValue ?? DEFAULT_SEARCH)
 
+<<<<<<< Updated upstream
   const canSearch = useMemo(() => {
     return form.origin.trim().length > 0 && form.destination.trim().length > 0
   }, [form.destination, form.origin])
 
+=======
+>>>>>>> Stashed changes
   function updateField<K extends keyof FlightSearchParams>(key: K, value: FlightSearchParams[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }

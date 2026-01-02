@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 import { useMemo, useState } from 'react'
 import type { Booking, BookingStatus, Flight, ID, IsoDateTimeString } from '../types'
+=======
+import { useMemo, useState, useEffect } from 'react'
+import type { Booking, Flight, ID, IsoDateTimeString } from '../types'
+>>>>>>> Stashed changes
 
 type BookingPanelProps = {
   userId: ID
@@ -17,9 +22,16 @@ function nowIso(): IsoDateTimeString {
 
 export function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) {
   const [seatCount, setSeatCount] = useState<number>(1)
-  const [status, setStatus] = useState<BookingStatus>('pending')
 
+<<<<<<< Updated upstream
   const maxSeats = Math.max(0, flight.availableSeats)
+=======
+  useEffect(() => {
+    setSeatCount(1)
+  }, [flight])
+
+  const maxSeats = Math.max(0, flight.available_seats)
+>>>>>>> Stashed changes
 
   const totalPrice = useMemo(() => {
     const normalizedSeats = Math.min(Math.max(seatCount, 1), Math.max(maxSeats, 1))
@@ -44,7 +56,6 @@ export function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) {
       bookingTime: nowIso(),
     }
 
-    setStatus('confirmed')
     onBooked(booking)
   }
 
