@@ -113,6 +113,16 @@ input:focus {
   transform: scale(1.02);
 }
 
+/* Seat count input (small numeric field inside BookingPanel) */
+.seat-count-input {
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+  height: 44px;
+  min-width: 64px;
+  width: 64px;
+  text-align: center;
+}
+
 /* ปุ่มกดทองคำสุดหรู (ใช้ฟอนต์ Prompt) */
 .btn-primary, .confirm-btn, button {
   background: var(--gold-gradient) !important;

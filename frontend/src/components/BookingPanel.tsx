@@ -17,9 +17,11 @@ function nowIso(): IsoDateTimeString {
 
 export default function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) {
   const [seatCount, setSeatCount] = useState<number>(1)
+  const [isBooked, setIsBooked] = useState(false)
 
   useEffect(() => {
     setSeatCount(1);
+    setIsBooked(false)
   }, [flight]);
 
   const maxSeats = Math.max(0, flight.available_seats)
@@ -48,6 +50,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
     }
 
     onBooked(booking)
+    setIsBooked(true)
   }
 
   return (
@@ -83,6 +86,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
               max={Math.max(maxSeats, 1)}
               value={seatCount}
               onChange={(e) => handleSeatChange(e.target.valueAsNumber)}
+              className="seat-count-input"
               style={{ 
                   width: '60px', textAlign: 'center', fontSize: '1.2rem', 
                   fontWeight: 'bold', margin: 0, borderRadius: '8px' 
@@ -118,6 +122,25 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
           >
             ยืนยันการจอง
           </button>
+
+          {isBooked && (
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                marginTop: 10,
+                padding: '10px 12px',
+                borderRadius: 12,
+                border: '1px solid var(--success-green)',
+                backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                color: 'var(--text-cream)',
+                fontFamily: 'Prompt',
+                textAlign: 'center',
+              }}
+            >
+              ✅ จองสำเร็จ!
+            </div>
+          )}
         </div>
       </div>
     </section>
