@@ -21,6 +21,16 @@ function mapFlightFromApi(raw: any): Flight {
   }
 }
 
+function toLocalYyyyMmDd(value: string | Date | null | undefined): string {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]); 
@@ -116,8 +126,8 @@ function App() {
       // ✅ ถ้าไม่ได้เลือกปลายทาง ให้ผ่านทุกเที่ยวบิน
       const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
       
-      // ✅ แก้การเทียบวันที่: ป้องกัน undefined
-      const flightDate = f.travel_date ? new Date(f.travel_date).toISOString().slice(0, 10) : '';
+      // ✅ เทียบวันที่แบบ Local time (หลีกเลี่ยงปัญหา timezone ทำให้วันเลื่อนได้)
+      const flightDate = toLocalYyyyMmDd(f.travel_date)
       // ✅ ถ้าไม่ได้เลือกวันที่ ให้ผ่านทุกเที่ยวบิน
       const dateOk = travelDate.length === 0 || flightDate === travelDate;
       
