@@ -7,77 +7,89 @@ type FlightListProps = {
 }
 
 function formatMoney(value: number | string): string {
-  const amount = Number(value); // แปลงเป็นตัวเลขเสมอ
-  return new Intl.NumberFormat('th-TH', { 
-    style: 'currency', 
-    currency: 'THB',
-    minimumFractionDigits: 2 
-  }).format(isNaN(amount) ? 0 : amount)
+  return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(Number(value))
 }
 
 export function FlightList({ flights, selectedFlightId, onSelect }: FlightListProps) {
   if (flights.length === 0) {
     return (
-      <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
-        <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', fontFamily: 'Prompt' }}>✈️ ไม่พบเที่ยวบินที่ตรงเงื่อนไขในขณะนี้</p>
+      <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+        <div style={{ fontSize: '3rem', opacity: 0.3 }}>✈️</div>
+        <p style={{ color: '#888', marginTop: '10px' }}>ไม่พบเที่ยวบินที่ค้นหา</p>
       </div>
     )
   }
 
   return (
-    <div style={{ display: 'grid', gap: '15px' }} aria-label="flight-results">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
       {flights.map((f) => {
         const isSelected = selectedFlightId === f.flight_id 
         const isAvailable = f.available_seats > 0 
 
         return (
-          <button
-            key={f.flight_id}
-            type="button"
-            onClick={() => onSelect(f)}
-            className={`flight-card-premium ${isSelected ? 'selected' : ''}`}
-            style={{
-              textAlign: 'left',
-              padding: '0', 
-              border: isSelected ? '2px solid var(--rich-gold)' : '1px solid rgba(197, 160, 89, 0.3)',
-              opacity: isAvailable ? 1 : 0.6,
-              cursor: isAvailable ? 'pointer' : 'not-allowed',
-              background: isSelected ? 'rgba(255,255,255, 0.95)' : 'rgba(255,255,255, 0.9)',
-              transition: 'all 0.3s ease',
-              width: '100%',
-              borderRadius: '15px',
-              overflow: 'hidden',
-              boxShadow: isSelected ? '0 10px 25px rgba(197, 160, 89, 0.4)' : '0 4px 10px rgba(0,0,0,0.1)'
-            }}
-            disabled={!isAvailable}
+          <div 
+            key={f.flight_id} 
+            className={`flight-card ${isSelected ? 'selected' : ''}`}
+            onClick={() => isAvailable && onSelect(f)}
+            style={{ cursor: isAvailable ? 'pointer' : 'not-allowed', opacity: isAvailable ? 1 : 0.6 }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch' }}>
-              <div style={{ padding: '20px', flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '1.4rem', fontFamily: 'Chonburi', color: 'var(--royal-blue)', marginBottom: '8px' }}>
-                  {f.flight_code} <span style={{ color: '#ccc', margin: '0 5px' }}>|</span> {f.origin} ➝ {f.destination}
-                </div>
-                <div style={{ fontSize: '0.95rem', fontFamily: 'Prompt', color: '#555', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                  <span>
-                    📅 {new Date(f.travel_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span style={{ color: f.available_seats < 5 ? '#e74c3c' : '#28a745', fontWeight: 'bold' }}>
-                    💺 ว่าง: {f.available_seats}
-                  </span>
-                </div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '20px', background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%)', borderLeft: '2px dashed #ccc', minWidth: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ fontSize: '0.8rem', color: '#666', fontFamily: 'Prompt' }}>ราคาเริ่มต้น</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success-green)', fontFamily: 'Prompt' }}>
-                  {formatMoney(f.price)}
-                </div>
-                {isSelected && (
-                  <div style={{ fontSize: '0.8rem', color: 'white', background: 'var(--rich-gold)', padding: '2px 8px', borderRadius: '10px', marginTop: '5px', fontFamily: 'Prompt' }}>
-                    เลือกอยู่ ✅
+            {/* โซนซ้าย: ข้อมูลการบิน */}
+            <div className="flight-info-left">
+               {/* โลโก้สมมติ */}
+               <div className="airline-logo">✈️</div>
+               
+               <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+                     <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
+                        {new Date(f.travel_date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                     </span>
+                     <span style={{ height: '2px', width: '50px', background: '#ddd', position: 'relative' }}>
+                        {/* เครื่องบินจิ๋วตรงกลางเส้น */}
+                        <span style={{ position: 'absolute', top: '-8px', left: '20px', fontSize: '12px' }}>✈</span>
+                     </span>
+                     <span style={{ color: '#888', fontSize: '0.9rem' }}>
+                        {/* เวลาถึงปลายทางสมมติ (+1 ชม) */}
+                        ปลายทาง
+                     </span>
                   </div>
-                )}
-              </div>
+                  <div className="route-info">
+                     {f.origin} <span style={{ color: '#ccc', fontSize: '0.8em' }}>➔</span> {f.destination}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '5px' }}>
+                     {f.flight_code} • Direct Flight
+                  </div>
+               </div>
             </div>
-          </button>
+
+            {/* โซนขวา: ราคา */}
+            <div className="flight-price-right">
+               <div style={{ fontSize: '0.9rem', color: '#888', marginBottom: '5px' }}>ราคา/ท่าน</div>
+               <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: 'var(--success)', lineHeight: 1 }}>
+                  {formatMoney(f.price)}
+               </div>
+               
+               {/* ปุ่มเลือก */}
+               <button 
+                  style={{ 
+                     marginTop: '10px', 
+                     width: '100%', 
+                     padding: '8px', 
+                     background: isSelected ? 'var(--primary-blue)' : 'white',
+                     color: isSelected ? 'white' : 'var(--primary-blue)',
+                     border: '1px solid var(--primary-blue)',
+                     borderRadius: '4px',
+                     fontWeight: 'bold',
+                     cursor: 'pointer'
+                  }}
+               >
+                  {isSelected ? 'เลือกแล้ว ✓' : 'เลือก'}
+               </button>
+
+               <div style={{ fontSize: '0.8rem', marginTop: '8px', color: f.available_seats < 5 ? 'red' : 'green' }}>
+                  {f.available_seats < 5 ? `เหลือ ${f.available_seats} ที่นั่ง!` : `ว่าง ${f.available_seats} ที่`}
+               </div>
+            </div>
+          </div>
         )
       })}
     </div>

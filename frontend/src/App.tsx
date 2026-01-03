@@ -12,6 +12,8 @@ import MyBookings from './pages/MyBookings'
 import api from './api/axios' 
 import type { Booking, Flight, FlightSearchParams, User, ID } from './types'
 
+// --- Helper Functions ---
+
 function mapFlightFromApi(raw: any): Flight {
   return {
     flight_id: raw.flight_id ?? raw.flightId,
@@ -78,13 +80,10 @@ function App() {
     }
   }, [currentUser, fetchFlights])
 
-  // 🔥 ฟังก์ชันนี้คือจุดแก้ไขสำคัญ (แก้ Error 400)
-  const handleAddFlight = async (newFlight: any) => { // ใช้ any ชั่วคราวเพื่อให้ยืดหยุ่นกับค่าที่รับมา
+  const handleAddFlight = async (newFlight: any) => { 
     try {
       console.log("🛠️ รับค่าจากฟอร์ม:", newFlight);
 
-      // ✅ สร้าง Payload ใหม่ โดยบังคับชื่อ Key ให้เป็น CamelCase ตามที่ Backend ต้องการ
-      // และใช้ ?? เพื่อดึงค่าไม่ว่าจะส่งมาแบบตัวเล็กหรือตัวใหญ่
       const payload = {
         flightCode: newFlight.flightCode ?? newFlight.flight_code, 
         origin: newFlight.origin,
@@ -98,18 +97,14 @@ function App() {
 
       const response = await api.post<any>('/flights', payload)
       
-      // แปลงข้อมูลขากลับเพื่อนำไปแสดงผล
       const created = mapFlightFromApi(response.data)
       setFlights((prev) => [created, ...prev.filter((f) => f.flight_id !== created.flight_id)])
       
       alert("✅ เพิ่มเที่ยวบินสำเร็จเรียบร้อย!");
     } catch (error: any) {
       console.error('❌ Failed to create flight:', error);
-      
-      // แสดงข้อความ Error ที่ชัดเจนขึ้น
       const msg = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
       alert(`เพิ่มเที่ยวบินไม่สำเร็จ: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
-      
       throw error;
     }
   }
@@ -148,40 +143,88 @@ function App() {
     })
   }, [search.destination, search.origin, search.travelDate, flights])
 
+  // =========================================================
+  // 🔥 ส่วน UI: แยกการแสดงผลตามสถานะ Login
+  // =========================================================
+
+  // 1️⃣ กรณี "ยังไม่ Login": ใช้ Layout แบบ Full Screen + รูปพื้นหลัง (Classic Luxury Theme)
   if (!currentUser) {
     return (
-      <div className="App">
-        <header style={{ padding: '20px' }}>
-          <h1 className="system-title">ระบบจองตั๋วเครื่องบิน</h1>
-        </header>
+      <div style={{ 
+        position: 'fixed', // บังคับเต็มจอ ทับทุกอย่าง
+        top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 9999,
+        // ✅ รูปพื้นหลังเครื่องบินที่คุณต้องการ
+        background: `linear-gradient(rgba(0, 20, 40, 0.4), rgba(0, 20, 40, 0.6)), url('https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=1920&q=80')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}>
+        {/* หัวข้อสีทอง */}
+        <h1 className="system-title" style={{ 
+          fontFamily: 'Chonburi', 
+          fontSize: '4rem', 
+          marginBottom: '30px',
+          marginTop: '0',
+          background: 'linear-gradient(135deg, #c5a059 0%, #fbd287 50%, #c5a059 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.8))',
+          textTransform: 'uppercase',
+          textAlign: 'center'
+        }}>
+          ระบบจองตั๋วเครื่องบิน
+        </h1>
+        
         <Login onLoginSuccess={(user) => setCurrentUser(user)} />
       </div>
     );
   }
 
+  // 2️⃣ กรณี "Login แล้ว": ใช้ Layout แบบ Dashboard Pro (Clean & Modern Theme)
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <header className="glass-panel" style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 30px', marginBottom: '10px' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.8rem', fontFamily: 'Chonburi' }}>ระบบจองตั๋วเครื่องบิน</h1>
-          <p style={{ margin: 0, opacity: 0.9, fontFamily: 'Prompt' }}>
-            สวัสดีคุณ <strong>{currentUser.name}</strong> | สิทธิ์: <strong>{currentUser.role}</strong>
-          </p>
+    <div>
+      {/* Navbar ด้านบน */}
+      <nav style={{ 
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+        padding: '10px 40px', 
+        background: 'rgba(255, 255, 255, 0.95)', 
+        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+        position: 'sticky', top: 0, zIndex: 1000,
+        backdropFilter: 'blur(10px)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <span style={{ fontSize: '2rem' }}>✈️</span>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.6rem', fontFamily: 'Chonburi', background: 'none', WebkitTextFillColor: '#002b49', color: '#002b49' }}>SKY WINGS</h1>
+            <span style={{ fontSize: '0.75rem', color: '#888', fontFamily: 'Prompt', letterSpacing: '2px', textTransform: 'uppercase' }}>Premium Airlines</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {/* ✅ ปุ่มเปิด Modal ประวัติการจอง (เฉพาะ USER) */}
+
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          <div style={{ textAlign: 'right', marginRight: '10px' }}>
+             <div style={{ fontWeight: 'bold', color: '#333', fontFamily: 'Prompt', fontSize: '0.9rem' }}>{currentUser.name}</div>
+             <div style={{ fontSize: '0.75rem', color: 'var(--rich-gold)', fontWeight: 'bold' }}>{currentUser.role}</div>
+          </div>
+          
           {currentUser.role === 'USER' && (
             <button
               onClick={() => setShowMyBookings(true)}
               style={{
-                backgroundColor: '#1890ff',
-                color: 'white',
-                border: 'none',
-                padding: '10px 20px',
+                backgroundColor: 'transparent',
+                color: '#002b49',
+                border: '2px solid #002b49',
+                padding: '8px 20px',
                 borderRadius: '50px',
                 cursor: 'pointer',
                 fontFamily: 'Prompt',
                 fontWeight: 'bold',
+                transition: '0.3s'
               }}
             >
               📋 ประวัติการจอง
@@ -193,72 +236,105 @@ function App() {
               backgroundColor: '#ff4d4f',
               color: 'white',
               border: 'none',
-              padding: '10px 20px',
+              padding: '8px 20px',
               borderRadius: '50px',
               cursor: 'pointer',
               fontFamily: 'Prompt',
               fontWeight: 'bold',
+              boxShadow: '0 4px 10px rgba(255, 77, 79, 0.3)'
             }}
           >
             ออกจากระบบ
           </button>
         </div>
-      </header>
+      </nav>
 
-      {currentUser.role === 'ADMIN' && (
-        <AdminFlightManager 
-          flights={flights} 
-          onAddFlight={handleAddFlight} 
-          onDeleteFlight={handleDeleteFlight} 
-        />
-      )}
-
-      <FlightSearchForm onSearch={setSearch} />
-
-      <div style={{ display: 'grid', gap: 20, gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start', padding: '0 10px' }}>
-        <section style={{ textAlign: 'left' }}>
-          <h2 style={{ marginTop: 0, color: 'var(--rich-gold)', fontFamily: 'Chonburi' }}>ผลการค้นหา ({filteredFlights.length})</h2>
-          
-          <FlightList
-            flights={filteredFlights}
-            selectedFlightId={selectedFlight?.flight_id}
-            onSelect={setSelectedFlight}
-          />
-        </section>
-
-        <section style={{ textAlign: 'left' }}>
-          {selectedFlight ? (
-            <BookingPanel 
-                userId={currentUser.user_id}   
-                flight={selectedFlight}        
-                onBooked={(booking) => {       
-                   setLatestBooking(booking);
-                   // อัปเดตจำนวนที่นั่งทันทีที่หน้าจอ
-                   setFlights(flights.map(f => 
-                       f.flight_id === booking.flight_id 
-                       ? { ...f, available_seats: f.available_seats - booking.seat_count } 
-                       : f
-                   ));
-                }} 
-            />
-          ) : (
-            <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
-              <h2 style={{ marginTop: 0, fontFamily: 'Chonburi', color: '#ccc' }}>จองเที่ยวบิน</h2>
-              <p style={{ fontFamily: 'Prompt' }}>👈 กรุณาเลือกเที่ยวบินทางซ้ายเพื่อเริ่มจอง</p>
-            </div>
-          )}
-        </section>
+      {/* Hero Section (ภาพปกสวยๆ สำหรับหน้าใน - แยกจากหน้า Login) */}
+      <div style={{ 
+        textAlign: 'center', padding: '80px 20px 60px', 
+        color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+        marginBottom: '-50px',
+        // ใช้พื้นหลังคนละรูปกับหน้า Login เพื่อความแตกต่างและสดใหม่
+        background: `linear-gradient(rgba(0, 43, 73, 0.3), rgba(0, 43, 73, 0.6)), url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1920&q=80')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}>
+        <h1 className="system-title" style={{ fontSize: '3.5rem', marginBottom: '10px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))', color: 'white', fontFamily: 'Chonburi' }}>ออกเดินทางสู่จุดหมายในฝัน</h1>
+        <p style={{ fontSize: '1.3rem', fontFamily: 'Prompt', opacity: 0.95 }}>จองตั๋วเครื่องบินราคาพิเศษ สะดวก รวดเร็ว ปลอดภัย</p>
       </div>
 
-      {latestBooking && (
-        <section style={{ textAlign: 'left', padding: '20px', backgroundColor: 'rgba(40, 167, 69, 0.2)', border: '1px solid #28a745', borderRadius: '15px', margin: '20px' }} aria-label="latest-booking">
-          <h2 style={{ marginTop: 0, color: '#28a745', fontFamily: 'Chonburi' }}>🎉 การจองล่าสุดสำเร็จ!</h2>
-          <div style={{ fontFamily: 'Prompt' }}><strong>Booking ID:</strong> {latestBooking.booking_id}</div>
-          <div style={{ fontFamily: 'Prompt' }}><strong>สถานะ:</strong> {latestBooking.status}</div>
-        </section>
-      )}
+      {/* Main Content Container */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', position: 'relative', zIndex: 2 }}>
+        
+        {/* ส่วนค้นหา (Search) */}
+        <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+           <FlightSearchForm onSearch={setSearch} />
+        </div>
 
-      {/* ✅ เรียกใช้ MyBookings */}
+        {/* ส่วน Admin (ถ้ามีสิทธิ์) */}
+        {currentUser.role === 'ADMIN' && (
+          <div style={{ marginBottom: '30px' }}>
+            <AdminFlightManager 
+              flights={flights} 
+              onAddFlight={handleAddFlight} 
+              onDeleteFlight={handleDeleteFlight} 
+            />
+          </div>
+        )}
+
+        {/* Grid Layout: ซ้ายรายการเที่ยวบิน - ขวาแผงจอง */}
+        <div style={{ display: 'grid', gap: 30, gridTemplateColumns: '1.8fr 1.2fr', alignItems: 'start' }}>
+          
+          <section style={{ textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+               <h2 style={{ margin: 0, color: 'var(--rich-gold)', fontFamily: 'Chonburi', fontSize: '1.8rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                 ✈️ เที่ยวบินที่ค้นหา ({filteredFlights.length})
+               </h2>
+            </div>
+            
+            <FlightList
+              flights={filteredFlights}
+              selectedFlightId={selectedFlight?.flight_id}
+              onSelect={setSelectedFlight}
+            />
+          </section>
+
+          <section style={{ textAlign: 'left', position: 'sticky', top: '100px' }}>
+            {selectedFlight ? (
+              <BookingPanel 
+                  userId={currentUser.user_id}   
+                  flight={selectedFlight}        
+                  onBooked={(booking) => {       
+                     setLatestBooking(booking);
+                     setFlights(flights.map(f => 
+                         f.flight_id === booking.flight_id 
+                         ? { ...f, available_seats: f.available_seats - booking.seat_count } 
+                         : f
+                     ));
+                  }} 
+              />
+            ) : (
+              <div className="glass-panel" style={{ textAlign: 'center', padding: '50px 30px', background: 'white', borderRadius: '15px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.5 }}>🎫</div>
+                <h2 style={{ marginTop: 0, fontFamily: 'Chonburi', color: '#ccc' }}>รอการเลือกเที่ยวบิน</h2>
+                <p style={{ fontFamily: 'Prompt', color: '#aaa' }}>
+                  กรุณาเลือกเที่ยวบินจากรายการทางซ้ายมือ<br/>เพื่อดูรายละเอียดและทำการจอง
+                </p>
+              </div>
+            )}
+
+            {latestBooking && (
+              <div style={{ marginTop: '20px', padding: '20px', backgroundColor: 'rgba(40, 167, 69, 0.1)', border: '1px solid #28a745', borderRadius: '15px', backdropFilter: 'blur(5px)' }}>
+                <h3 style={{ margin: '0 0 10px', color: '#28a745', fontFamily: 'Chonburi' }}>🎉 จองสำเร็จ!</h3>
+                <div style={{ fontFamily: 'Prompt', fontSize: '0.9rem', color: '#333' }}>Booking ID: <strong>{latestBooking.booking_id}</strong></div>
+                <div style={{ fontFamily: 'Prompt', fontSize: '0.9rem', color: '#333' }}>สถานะ: <strong>{latestBooking.status}</strong></div>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* Modal ประวัติการจอง */}
       {showMyBookings && (
         <MyBookings 
             userId={currentUser.user_id} 
