@@ -23,15 +23,23 @@ export class FlightsService {
     return flight;
   }
 
-  // ✅ แก้ไขปัญหา null value ใน column "flight_code"
+  // ✅ แก้ไข: จับคู่ตัวแปรจาก DTO (CamelCase) ไปยัง Database (Snake_case) ให้ถูกต้อง
   async create(dto: CreateFlightDto): Promise<Flight> {
     const flight = this.flightRepository.create({
-      flight_code: dto.flight_code,           // ✅ ใส่ค่าจาก Postman ลงใน Database
+      // ฝั่งซ้าย = ชื่อ Column ใน Database (Snake_case)
+      // ฝั่งขวา = ชื่อตัวแปรที่รับมาจาก DTO (CamelCase)
+      
+      flight_code: dto.flightCode,          // 👈 แก้จาก dto.flight_code เป็น dto.flightCode
       origin: dto.origin,
       destination: dto.destination,
-      travel_date: new Date(dto.travelDate), // ✅ แปลง travelDate เป็น travel_date ของ DB
+      
+      // หมายเหตุ: ถ้า DTO ส่งมาเป็น String ให้ใช้ new Date()
+      // ถ้าส่งมาเป็น Date อยู่แล้วก็ใช้ dto.travelDate ได้เลย
+      travel_date: new Date(dto.travelDate), // 👈 แก้จาก dto.travel_date เป็น dto.travelDate
+      
       price: dto.price,
-      available_seats: dto.availableSeats,   // ✅ แปลง availableSeats เป็น available_seats ของ DB
+      available_seats: dto.availableSeats,   // 👈 แก้จาก dto.available_seats เป็น dto.availableSeats
+      
       status: 'Active'
     });
     

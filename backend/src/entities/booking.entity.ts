@@ -1,27 +1,37 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { User } from './user.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Flight } from './flight.entity';
+import { User } from './user.entity';
 
-@Entity('bookings')
+@Entity('BOOKINGS')
 export class Booking {
   @PrimaryGeneratedColumn()
   booking_id: number;
 
   @Column()
-  seat_count: number;
+  user_id: number;
 
   @Column()
+  flight_id: number;
+
+  @Column()
+  seat_count: number;
+
+  @Column('decimal', { precision: 10, scale: 2 })
   total_price: number;
 
   @Column({ default: 'Confirmed' })
   status: string;
 
-  @CreateDateColumn()
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   booking_time: Date;
 
-  @ManyToOne(() => User, (user) => user.bookings)
-  user: User;
+  // ✅ Relation กับ Flight
+  @ManyToOne(() => Flight, { eager: false })
+  @JoinColumn({ name: 'flight_id' })
+  flight?: Flight;
 
-  @ManyToOne(() => Flight, (flight) => flight.bookings)
-  flight: Flight;
+  // ✅ Relation กับ User (เพิ่มใหม่)
+  @ManyToOne(() => User, (user) => user.bookings, { eager: false })
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
 }

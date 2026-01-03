@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, Param } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -8,7 +8,22 @@ export class BookingsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async create(@Req() req: any, @Body() body: { flightId: number, seats: number }) {
-    return await this.bookingsService.create(req.user.userId, body.flightId, body.seats);
+  async create(
+    @Req() req: any, 
+    @Body() body: { flightId: number, seatCount: number, totalPrice: number } 
+  ) {
+    return await this.bookingsService.create(
+      req.user.userId, 
+      body.flightId, 
+      body.seatCount, 
+      body.totalPrice
+    );
+  }
+
+  // ✅ Endpoint ใหม่: ดึงประวัติการจองของ User
+  @Get('my-bookings/:userId')
+  @UseGuards(JwtAuthGuard)
+  async getMyBookings(@Param('userId') userId: string) {
+    return await this.bookingsService.findByUserId(Number(userId));
   }
 }

@@ -1,44 +1,60 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { User } from './entities/user.entity';
-import { Flight } from './entities/flight.entity';
-import { Booking } from './entities/booking.entity';
 
-// Import Module อื่นๆ เพิ่มเติม
-import { AuthModule } from './auth/auth.module'; // เพิ่มบรรทัดนี้
+import { AuthModule } from './auth/auth.module';
 import { FlightsModule } from './flights/flights.module';
-import { BookingsModule } from './bookings/bookings.module'; // เพิ่มบรรทัดนี้
+import { BookingsModule } from './bookings/bookings.module';
 
 @Module({
   imports: [
-    // 1. โหลดไฟล์ .env มาใช้งาน
     ConfigModule.forRoot({
+      envFilePath: '.env',
       isGlobal: true,
     }),
-    // 2. เชื่อมต่อ Database โดยดึงค่าจาก .env
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST'),
-        port: configService.get<number>('DATABASE_PORT'),
-        username: configService.get<string>('DATABASE_USER'),
-        password: configService.get<string>('DATABASE_PASSWORD'),
-        database: configService.get<string>('DATABASE_NAME'),
-        entities: [User, Flight, Booking],
-        synchronize: true, // สร้างตารางให้อัตโนมัติ
-      }),
+      useFactory: async (configService: ConfigService) => {
+        // 🔒 ค่าที่คุณใช้จริง (ตามของเก่า)
+        const host = '127.0.0.1';
+        const port = 5444;
+        const username = 'admin';
+        const password = 'newpassword999';
+        const database = 'flight_booking_db';
+
+        // 🐛 DEBUG ช่วยเช็คการเชื่อมต่อ
+        console.log('--- DEBUG: TRYING TO CONNECT ---');
+        console.log(`Target: ${host}:${port}`);
+        console.log(`User: ${username} / Pass: ${password}`);
+        console.log(`Database: ${database}`);
+        console.log('--------------------------------');
+
+        return {
+          type: 'postgres',
+          host,
+          port,
+          username,
+          password,
+          database,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: true, // ⚠️ ปิดใน production
+          logging: false,
+          
+          // 🚀 เพิ่มส่วนนี้เพื่อแก้ปัญหาถาวร
+          autoLoadEntities: true,
+          retryAttempts: 10,           // ลองเชื่อมต่อใหม่ 10 ครั้ง
+          retryDelay: 3000,            // รอ 3 วินาทีต่อครั้ง
+          connectTimeoutMS: 10000,     // timeout 10 วินาที
+          maxQueryExecutionTime: 5000, // query ไม่เกิน 5 วินาที
+        };
+      },
     }),
-    // 3. ลงทะเบียนโมดูลการทำงานทั้งหมด
-    AuthModule,      // สำหรับระบบ Login/Register
-    FlightsModule,   // สำหรับจัดการเที่ยวบิน
-    BookingsModule,  // สำหรับระบบจองและตัด Stock
+
+    AuthModule,
+    FlightsModule,
+    BookingsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

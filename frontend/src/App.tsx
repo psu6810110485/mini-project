@@ -5,6 +5,10 @@ import { FlightList } from './components/FlightList'
 import { FlightSearchForm } from './components/FlightSearchForm'
 import { Login } from './components/Login' 
 import { AdminFlightManager } from './components/AdminFlightManager'
+
+// ✅ Import หน้าประวัติการจอง
+import MyBookings from './pages/MyBookings' 
+
 import api from './api/axios' 
 import type { Booking, Flight, FlightSearchParams, User, ID } from './types'
 
@@ -41,8 +45,10 @@ function App() {
   })
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
+  
+  // ✅ State สำหรับเปิด/ปิด Modal ประวัติการจอง
+  const [showMyBookings, setShowMyBookings] = useState(false) 
 
-  // 🛠️ ตรวจสอบ User จาก LocalStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser && savedUser !== "undefined") {
@@ -66,31 +72,45 @@ function App() {
     }
   }, [])
 
-  // 🛠️ ดึงข้อมูลเที่ยวบินใหม่ทุกครั้งที่เข้า/รีเฟรชหลังล็อกอิน
   useEffect(() => {
     if (currentUser) {
       fetchFlights()
     }
   }, [currentUser, fetchFlights])
 
-  const handleAddFlight = async (newFlight: Flight) => {
+  // 🔥 ฟังก์ชันนี้คือจุดแก้ไขสำคัญ (แก้ Error 400)
+  const handleAddFlight = async (newFlight: any) => { // ใช้ any ชั่วคราวเพื่อให้ยืดหยุ่นกับค่าที่รับมา
     try {
-      // Backend ใช้ DTO แบบ camelCase: travelDate / availableSeats
+      console.log("🛠️ รับค่าจากฟอร์ม:", newFlight);
+
+      // ✅ สร้าง Payload ใหม่ โดยบังคับชื่อ Key ให้เป็น CamelCase ตามที่ Backend ต้องการ
+      // และใช้ ?? เพื่อดึงค่าไม่ว่าจะส่งมาแบบตัวเล็กหรือตัวใหญ่
       const payload = {
-        flight_code: newFlight.flight_code,
+        flightCode: newFlight.flightCode ?? newFlight.flight_code, 
         origin: newFlight.origin,
         destination: newFlight.destination,
-        travelDate: newFlight.travel_date,
+        travelDate: newFlight.travelDate ?? newFlight.travel_date, 
         price: Number(newFlight.price),
-        availableSeats: Number(newFlight.available_seats),
+        availableSeats: Number(newFlight.availableSeats ?? newFlight.available_seats), 
       }
 
+      console.log("📦 กำลังส่งไป Backend:", payload);
+
       const response = await api.post<any>('/flights', payload)
+      
+      // แปลงข้อมูลขากลับเพื่อนำไปแสดงผล
       const created = mapFlightFromApi(response.data)
       setFlights((prev) => [created, ...prev.filter((f) => f.flight_id !== created.flight_id)])
-    } catch (error) {
-      console.error('Failed to create flight', error)
-      throw error
+      
+      alert("✅ เพิ่มเที่ยวบินสำเร็จเรียบร้อย!");
+    } catch (error: any) {
+      console.error('❌ Failed to create flight:', error);
+      
+      // แสดงข้อความ Error ที่ชัดเจนขึ้น
+      const msg = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+      alert(`เพิ่มเที่ยวบินไม่สำเร็จ: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+      
+      throw error;
     }
   }
 
@@ -120,22 +140,14 @@ function App() {
     const travelDate = search.travelDate ?? ''
 
     return flights.filter((f) => {
-      // ✅ ถ้าไม่ได้เลือกต้นทาง ให้ผ่านทุกเที่ยวบิน
       const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
-      
-      // ✅ ถ้าไม่ได้เลือกปลายทาง ให้ผ่านทุกเที่ยวบิน
       const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
-      
-      // ✅ เทียบวันที่แบบ Local time (หลีกเลี่ยงปัญหา timezone ทำให้วันเลื่อนได้)
       const flightDate = toLocalYyyyMmDd(f.travel_date)
-      // ✅ ถ้าไม่ได้เลือกวันที่ ให้ผ่านทุกเที่ยวบิน
       const dateOk = travelDate.length === 0 || flightDate === travelDate;
-      
       return originOk && destOk && dateOk
     })
   }, [search.destination, search.origin, search.travelDate, flights])
 
-  // หากยังไม่ล็อกอิน ให้แสดงหน้า Login
   if (!currentUser) {
     return (
       <div className="App">
@@ -156,12 +168,43 @@ function App() {
             สวัสดีคุณ <strong>{currentUser.name}</strong> | สิทธิ์: <strong>{currentUser.role}</strong>
           </p>
         </div>
-        <button onClick={handleLogout} style={{ height: 'fit-content', backgroundColor: '#ff4d4f', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '50px', cursor: 'pointer', fontFamily: 'Prompt', fontWeight: 'bold' }}>
-          ออกจากระบบ
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {/* ✅ ปุ่มเปิด Modal ประวัติการจอง (เฉพาะ USER) */}
+          {currentUser.role === 'USER' && (
+            <button
+              onClick={() => setShowMyBookings(true)}
+              style={{
+                backgroundColor: '#1890ff',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '50px',
+                cursor: 'pointer',
+                fontFamily: 'Prompt',
+                fontWeight: 'bold',
+              }}
+            >
+              📋 ประวัติการจอง
+            </button>
+          )}
+          <button
+            onClick={handleLogout}
+            style={{
+              backgroundColor: '#ff4d4f',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '50px',
+              cursor: 'pointer',
+              fontFamily: 'Prompt',
+              fontWeight: 'bold',
+            }}
+          >
+            ออกจากระบบ
+          </button>
+        </div>
       </header>
 
-      {/* Admin View */}
       {currentUser.role === 'ADMIN' && (
         <AdminFlightManager 
           flights={flights} 
@@ -190,8 +233,7 @@ function App() {
                 flight={selectedFlight}        
                 onBooked={(booking) => {       
                    setLatestBooking(booking);
-                   
-                   // อัปเดต Client-side
+                   // อัปเดตจำนวนที่นั่งทันทีที่หน้าจอ
                    setFlights(flights.map(f => 
                        f.flight_id === booking.flight_id 
                        ? { ...f, available_seats: f.available_seats - booking.seat_count } 
@@ -214,6 +256,14 @@ function App() {
           <div style={{ fontFamily: 'Prompt' }}><strong>Booking ID:</strong> {latestBooking.booking_id}</div>
           <div style={{ fontFamily: 'Prompt' }}><strong>สถานะ:</strong> {latestBooking.status}</div>
         </section>
+      )}
+
+      {/* ✅ เรียกใช้ MyBookings */}
+      {showMyBookings && (
+        <MyBookings 
+            userId={currentUser.user_id} 
+            onClose={() => setShowMyBookings(false)} 
+        />
       )}
     </div>
   )
