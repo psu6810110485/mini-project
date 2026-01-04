@@ -18,14 +18,12 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f db",
     "docker:restart": "docker-compose restart db",
     "docker:ps": "docker-compose ps",
     "docker:clean": "docker-compose down -v",
-    
     "dev": "npm run docker:up && nest start --watch",
     "dev:fresh": "npm run docker:down && npm run docker:up && nest start --watch"
   },
@@ -47,6 +45,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
+    "sweetalert2": "^11.26.17",
     "typeorm": "^0.3.28"
   },
   "devDependencies": {

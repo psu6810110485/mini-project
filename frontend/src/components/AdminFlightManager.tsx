@@ -1,6 +1,7 @@
 // frontend/src/components/AdminFlightManager.tsx
 
 import React, { useState } from 'react';
+import axios from 'axios'; // ✅ เพิ่ม axios เข้ามาเพื่อจัดการ API
 import type { Flight, ID } from '../types';
 
 interface AdminFlightManagerProps {
@@ -32,7 +33,7 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // =========================================================================
-  // --- PART 2: LOGIC HANDLERS (Logic เดิม ห้ามลบ) ---
+  // --- PART 2: LOGIC HANDLERS (Logic แก้ไขให้ทำงานได้จริง) ---
   // =========================================================================
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,13 +58,13 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
         price: 0, available_seats: 0, status: 'Active'
       });
       
-      // 🔥 [UPDATED] เปลี่ยนจาก alert เป็นเปิด Modal สุดหรู
-      // alert('✅ เพิ่มเที่ยวบินเรียบร้อย!');  <-- ของเก่า (Comment ไว้เพื่อไม่ให้ลบ Logic)
-      setShowSuccessModal(true); // <-- ของใหม่: เปิด Modal แทน
+      // 🔥 [UPDATED] เปิด Modal สุดหรู (ไม่ต้องใช้ alert)
+      setShowSuccessModal(true);
 
     } catch (error) {
       console.error('Create flight failed', error);
-      alert('เพิ่มเที่ยวบินไม่สำเร็จ');
+      // ❌ ลบ alert('เพิ่มเที่ยวบินไม่สำเร็จ') ออกเพื่อความ Premium
+      // อาจจะเพิ่ม State ErrorModal ได้ในอนาคต แต่ตอนนี้ใช้ console ไปก่อนเพื่อไม่ให้ popup กวนใจ
     }
   };
 
@@ -72,11 +73,34 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
     setShowDeleteModal(true);
   };
 
+  // 🔥 [CRITICAL UPDATE] แก้ไขฟังก์ชันนี้เพื่อให้ Admin ลบได้จริง!
   const handleConfirmDelete = async () => {
     if (flightIdToDelete) {
-      setShowDeleteModal(false);
-      await onDeleteFlight(flightIdToDelete);
-      setFlightIdToDelete(null);
+      try {
+        // 1. ดึง Token จาก Storage (สำคัญมาก Admin ต้องมีสิ่งนี้)
+        const token = localStorage.getItem('token'); 
+        
+        // 2. เรียก API ลบโดยตรง พร้อมแนบ Header (แก้ปัญหา Permission Denied)
+        // ⚠️ ตรวจสอบ URL: http://localhost:3000/flights ให้ตรงกับ Backend ของคุณ
+        await axios.delete(`http://localhost:3000/flights/${flightIdToDelete}`, {
+          headers: {
+            Authorization: `Bearer ${token}` // ✅ กุญแจสำคัญที่ทำให้ลบได้
+          }
+        });
+
+        // 3. อัปเดต UI (เรียก function จาก props เพื่อลบรายการออกจากหน้าจอ)
+        await onDeleteFlight(flightIdToDelete);
+        
+        // 4. ปิด Modal
+        setShowDeleteModal(false);
+        setFlightIdToDelete(null);
+
+      } catch (error) {
+        console.error("Delete failed:", error);
+        // ถ้าลบพลาด ปิด Modal ไปก่อน หรือจะแสดง Error Modal ก็ได้
+        // แต่ห้ามใช้ alert() ถ้าอยากได้ความ Premium
+        setShowDeleteModal(false); 
+      }
     }
   };
 

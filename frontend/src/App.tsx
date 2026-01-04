@@ -2,6 +2,7 @@
 
 import './App.css'
 import { useMemo, useState, useEffect, useCallback } from 'react'
+import Swal from 'sweetalert2' // ✅ Import ตัวช่วย UI สวยๆ (ต้อง npm install sweetalert2 ก่อน)
 import BookingPanel from './components/BookingPanel' 
 import { FlightList } from './components/FlightList'
 import { FlightSearchForm } from './components/FlightSearchForm'
@@ -107,35 +108,104 @@ function App() {
       const created = mapFlightFromApi(response.data)
       setFlights((prev) => [created, ...prev.filter((f) => f.flight_id !== created.flight_id)])
       
-      // ❌ [UPDATE] ปิด Alert เดิม เพื่อให้ AdminFlightManager แสดง Modal หรูๆ แทน
-      // alert("✅ เพิ่มเที่ยวบินสำเร็จเรียบร้อย!"); 
+      // ✅ [UPDATE] ไม่ต้อง Alert ตรงนี้แล้ว เพราะใน AdminFlightManager มี Modal Success แล้ว
+      // หรือถ้าจะให้ชัวร์ ใช้ Swal แจ้งเตือนเล็กๆ มุมขวาก็ได้
+      const Toast = Swal.mixin({
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
+        didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
+      });
+      Toast.fire({ icon: 'success', title: 'เพิ่มข้อมูลเรียบร้อย' });
 
     } catch (error: any) {
       console.error('❌ Failed to create flight:', error);
       const msg = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
-      alert(`เพิ่มเที่ยวบินไม่สำเร็จ: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+      
+      // ✅ [PREMIUM UI] เปลี่ยนจาก alert เป็น Swal Error
+      Swal.fire({
+        icon: 'error',
+        title: 'เพิ่มเที่ยวบินไม่สำเร็จ',
+        text: Array.isArray(msg) ? msg.join(', ') : msg,
+        confirmButtonColor: '#d33'
+      });
       throw error;
     }
   }
 
+  // 🔥 [UPDATED] แก้ไขฟังก์ชันลบให้เป็น Premium UI และแก้ Error
   const handleDeleteFlight = async (id: ID) => {
-    if (!window.confirm('คุณต้องการลบเที่ยวบินนี้ใช่หรือไม่?')) return
+    // 1. ถามยืนยันด้วย UI สวยๆ (แทน window.confirm)
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบ?',
+      text: "คุณต้องการลบเที่ยวบินนี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'ลบเที่ยวบิน',
+      cancelButtonText: 'ยกเลิก',
+      background: '#fff',
+      color: '#000'
+    });
 
-    try {
-      await api.delete(`/flights/${id}`)
-      setFlights((prev) => prev.filter((f) => f.flight_id !== id))
-    } catch (error) {
-      console.error('Failed to delete flight', error)
-      alert('ลบเที่ยวบินไม่สำเร็จ (ตรวจสอบสิทธิ์/การเชื่อมต่อ Backend)')
+    if (result.isConfirmed) {
+      try {
+        // 2. เรียก API ลบ
+        console.log(`🗑️ Deleting flight ID: ${id}`);
+        await api.delete(`/flights/${id}`);
+        
+        // 3. อัปเดต State (ลบออกจากหน้าจอ)
+        setFlights((prev) => prev.filter((f) => f.flight_id !== id));
+
+        // 4. แจ้งเตือนสำเร็จ
+        Swal.fire(
+          'ลบสำเร็จ!',
+          'เที่ยวบินถูกลบออกจากระบบแล้ว.',
+          'success'
+        );
+
+      } catch (error: any) {
+        console.error('Failed to delete flight', error);
+        
+        // 5. จัดการ Error (กรณี 404 หรืออื่นๆ)
+        if (error.response && error.response.status === 404) {
+           // กรณีหาไม่เจอ (อาจจะลบไปแล้ว) ก็ให้อัปเดตหน้าจอไปเลย
+           setFlights((prev) => prev.filter((f) => f.flight_id !== id));
+           Swal.fire('ไม่พบข้อมูล', 'เที่ยวบินนี้อาจถูกลบไปแล้ว', 'info');
+        } else {
+           Swal.fire({
+             icon: 'error',
+             title: 'เกิดข้อผิดพลาด',
+             text: 'ลบเที่ยวบินไม่สำเร็จ (กรุณาตรวจสอบสิทธิ์หรือการเชื่อมต่อ)',
+           });
+        }
+      }
     }
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setCurrentUser(null);
-    setSelectedFlight(null);
-    setLatestBooking(null);
+    // ✅ เพิ่ม Confirm ก่อน Logout เพื่อความหรูหรา
+    Swal.fire({
+      title: 'ออกจากระบบ?',
+      text: "คุณต้องการออกจากระบบใช่หรือไม่",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ff4d4f',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'ใช่, ออกจากระบบ'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setCurrentUser(null);
+        setSelectedFlight(null);
+        setLatestBooking(null);
+        
+        const Toast = Swal.mixin({
+          toast: true, position: 'top-end', showConfirmButton: false, timer: 2000
+        });
+        Toast.fire({ icon: 'success', title: 'ออกจากระบบเรียบร้อย' });
+      }
+    });
   };
 
   const filteredFlights = useMemo(() => {
@@ -323,12 +393,12 @@ function App() {
                   userId={getUserId(currentUser)}
                   flight={selectedFlight}        
                   onBooked={(booking) => {       
-                       setLatestBooking(booking);
-                       setFlights(flights.map(f => 
+                        setLatestBooking(booking);
+                        setFlights(flights.map(f => 
                            f.flight_id === booking.flight_id 
                            ? { ...f, available_seats: f.available_seats - booking.seat_count } 
                            : f
-                       ));
+                        ));
                   }} 
               />
             ) : (
