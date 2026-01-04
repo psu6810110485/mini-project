@@ -193,7 +193,7 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
                       transition: 'all 0.2s'
                     }}
                   >
-                    ลบ
+                    
                   </button>
                 </td>
               </tr>

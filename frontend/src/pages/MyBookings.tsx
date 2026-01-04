@@ -23,6 +23,10 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // ✅ [เพิ่มใหม่ 1] State สำหรับ Modal ยกเลิก
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelledBookingId, setCancelledBookingId] = useState<ID | null>(null)
+
   useEffect(() => {
     console.log('🎯 MyBookings Component mounted with userId:', userId);
     console.log('🔐 Current token:', localStorage.getItem('token')?.substring(0, 30) + '...');
@@ -73,7 +77,11 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
         )
       )
       
-      alert('✅ ยกเลิกการจองสำเร็จ')
+      // ✅ [แก้ไข 2] เปลี่ยนจาก alert เป็นเปิด Modal
+      // alert('✅ ยกเลิกการจองสำเร็จ') 
+      setCancelledBookingId(bookingId)
+      setShowCancelModal(true)
+
     } catch (err: any) {
       console.error('❌ Failed to cancel booking:', err)
       alert('ยกเลิกการจองไม่สำเร็จ: ' + (err.response?.data?.message || 'เกิดข้อผิดพลาด'))
@@ -414,6 +422,75 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
           )}
         </div>
       </div>
+
+      {/* ✅ [เพิ่มใหม่ 3] Modal ยกเลิกสำเร็จ (Premium Red Theme) */}
+      {showCancelModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000,
+          animation: 'fadeIn 0.3s ease-out'
+        }} onClick={() => setShowCancelModal(false)}>
+          
+          <div style={{
+            background: 'linear-gradient(145deg, #2c0505, #4a0d0d, #1a0000)', // แดงเข้มหรูหรา
+            borderRadius: '25px', padding: '50px 60px', maxWidth: '500px', width: '90%',
+            boxShadow: '0 30px 90px rgba(0, 0, 0, 0.9)', border: '2px solid rgba(255, 77, 79, 0.5)',
+            textAlign: 'center', color: '#fff', animation: 'slideUp 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55)', position: 'relative'
+          }} onClick={(e) => e.stopPropagation()}>
+            
+            <button onClick={() => setShowCancelModal(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '1.2rem', color: '#fff', cursor: 'pointer' }}>✕</button>
+            
+            <div style={{ 
+              width: '100px', height: '100px', margin: '0 auto 25px', 
+              background: 'linear-gradient(135deg, #ff4d4f, #d9363e)', 
+              borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              fontSize: '3.5rem', boxShadow: '0 0 30px rgba(255, 77, 79, 0.6)', 
+              animation: 'shake 0.5s ease-in-out' 
+            }}>
+              🗑️
+            </div>
+            
+            <h1 style={{ fontFamily: 'Chonburi', fontSize: '2.2rem', margin: '0 0 10px', color: '#ff4d4f' }}>
+              ยกเลิกสำเร็จ
+            </h1>
+            
+            <p style={{ fontFamily: 'Prompt', fontSize: '1rem', color: '#ccc', marginBottom: '30px' }}>
+              ระบบได้ทำการยกเลิกการจองของคุณเรียบร้อยแล้ว<br/>สถานะการจองถูกเปลี่ยนเป็น "Cancelled"
+            </p>
+            
+            {cancelledBookingId && (
+              <div style={{ 
+                background: 'rgba(255, 255, 255, 0.05)', borderRadius: '15px', padding: '15px', marginBottom: '30px', 
+                border: '1px dashed rgba(255, 77, 79, 0.4)', fontFamily: 'monospace', fontSize: '1.2rem', color: '#ff4d4f' 
+              }}>
+                Booking ID: #{cancelledBookingId}
+              </div>
+            )}
+            
+            <button 
+              onClick={() => setShowCancelModal(false)} 
+              style={{ 
+                width: '100%', padding: '15px', borderRadius: '50px', border: 'none', 
+                background: '#ff4d4f', color: 'white', fontWeight: 'bold', fontSize: '1.1rem', 
+                cursor: 'pointer', fontFamily: 'Prompt', boxShadow: '0 8px 20px rgba(255, 77, 79, 0.3)',
+                transition: '0.3s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              รับทราบ (Close)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Styles for Animations */}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(100px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+      `}</style>
     </>
   )
 }
