@@ -57,10 +57,11 @@ export class BookingsService {
     }
   }
 
-  // ✅ Method ปรับปรุงใหม่: ดึงประวัติการจองพร้อมข้อมูลเที่ยวบิน
+  // ✅ แก้ไข: ดึงประวัติการจองพร้อมข้อมูลเที่ยวบิน
   async findByUserId(userId: number) {
     try {
-      // ใช้ QueryBuilder แทน relations เพื่อความแม่นยำ
+      console.log('🔍 Fetching bookings for userId:', userId);
+      
       const bookings = await this.bookingRepository
         .createQueryBuilder('booking')
         .leftJoinAndSelect('booking.flight', 'flight')
@@ -68,21 +69,23 @@ export class BookingsService {
         .orderBy('booking.booking_time', 'DESC')
         .getMany();
 
-      // ✅ แปลง response ให้ตรงกับ Frontend (lowercase status)
+      console.log('✅ Found bookings:', bookings.length);
+
+      // ✅ แปลง response ให้ตรงกับ Frontend
       return bookings.map(booking => ({
         booking_id: booking.booking_id,
         user_id: booking.user_id,
         flight_id: booking.flight_id,
         seat_count: booking.seat_count,
-        total_price: booking.total_price,
-        status: booking.status.toLowerCase(), // แปลง "Confirmed" → "confirmed"
+        total_price: Number(booking.total_price), // แปลงเป็น number
+        status: booking.status.toLowerCase(), // ✅ แปลง "Confirmed" → "confirmed"
         booking_time: booking.booking_time,
         flight: booking.flight ? {
           flight_code: booking.flight.flight_code,
           origin: booking.flight.origin,
           destination: booking.flight.destination,
           travel_date: booking.flight.travel_date
-        } : undefined
+        } : null
       }));
     } catch (error) {
       console.error('❌ Error fetching bookings:', error);
@@ -90,17 +93,23 @@ export class BookingsService {
     }
   }
 
-  // ✅ Method ใหม่: อัปเดตสถานะการจอง (สำหรับยกเลิก)
+  // ✅ อัปเดตสถานะการจอง (สำหรับยกเลิก)
   async updateStatus(bookingId: number, status: string) {
     const booking = await this.bookingRepository.findOne({
-      where: { booking_id: bookingId }
+      where: { booking_id: bookingId },
+      relations: ['flight']
     });
 
     if (!booking) {
       throw new NotFoundException('ไม่พบการจองที่ระบุ');
     }
 
-    // ถ้ายกเลิกการจอง ให้คืนที่นั่งกลับไป
+    // ✅ ป้องกันการยกเลิกซ้ำ
+    if (status.toLowerCase() === 'cancelled' && booking.status.toLowerCase() === 'cancelled') {
+      throw new BadRequestException('การจองนี้ถูกยกเลิกไปแล้ว');
+    }
+
+    // ✅ คืนที่นั่งกลับไป
     if (status.toLowerCase() === 'cancelled' && booking.status.toLowerCase() !== 'cancelled') {
       const flight = await this.flightRepository.findOne({
         where: { flight_id: booking.flight_id }
@@ -109,10 +118,16 @@ export class BookingsService {
       if (flight) {
         flight.available_seats += booking.seat_count;
         await this.flightRepository.save(flight);
+        console.log(`✅ คืนที่นั่ง ${booking.seat_count} ที่นั่งให้เที่ยวบิน ${flight.flight_code}`);
       }
     }
 
-    booking.status = status;
-    return await this.bookingRepository.save(booking);
+    booking.status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase(); // Capitalize
+    const updated = await this.bookingRepository.save(booking);
+    
+    return {
+      ...updated,
+      status: updated.status.toLowerCase() // ส่งกลับเป็น lowercase
+    };
   }
 }

@@ -6,15 +6,31 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
+    // ✅ ใช้ JWT_SECRET จาก .env (secretKeyTudTud1234)
+    const secret = configService.get<string>('JWT_SECRET') || 'secretKeyTudTud1234';
+    
+    // 🔍 Debug log เพื่อตรวจสอบว่า secret โหลดถูกต้อง
+    console.log('🔐 JWT Strategy initialized with secret:', secret.substring(0, 10) + '...');
+    
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // ✅ แก้ไข: ใส่ || 'MyFallbackSecretKey' เพื่อกัน Error ถ้าหาใน .env ไม่เจอ
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'MyFallbackSecretKey123',
+      secretOrKey: secret,
     });
   }
 
   async validate(payload: any) {
-    return { userId: payload.sub, email: payload.email, role: payload.role };
+    // 🔍 Debug log เพื่อดูข้อมูลที่ถอดรหัสจาก Token
+    console.log('✅ JWT Payload validated:', {
+      userId: payload.sub,
+      email: payload.email,
+      role: payload.role
+    });
+    
+    return { 
+      userId: payload.sub, 
+      email: payload.email, 
+      role: payload.role 
+    };
   }
 }

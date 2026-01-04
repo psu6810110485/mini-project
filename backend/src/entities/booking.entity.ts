@@ -2,7 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 't
 import { Flight } from './flight.entity';
 import { User } from './user.entity';
 
-@Entity('BOOKINGS')
+// ✅ แก้ไข: เปลี่ยนจาก 'BOOKINGS' เป็น 'bookings' (ตัวพิมพ์เล็ก)
+@Entity('bookings')
 export class Booking {
   @PrimaryGeneratedColumn()
   booking_id: number;
@@ -30,7 +31,7 @@ export class Booking {
   @JoinColumn({ name: 'flight_id' })
   flight?: Flight;
 
-  // ✅ Relation กับ User (เพิ่มใหม่)
+  // ✅ Relation กับ User
   @ManyToOne(() => User, (user) => user.bookings, { eager: false })
   @JoinColumn({ name: 'user_id' })
   user?: User;

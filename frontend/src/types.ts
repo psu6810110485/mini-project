@@ -37,10 +37,12 @@ export interface RegisterRequest {
   password: string
 }
 
-// ---------- Domain Models (เปลี่ยนเป็น snake_case ให้ตรงกับ DB) ----------
+// ---------- Domain Models ----------
 
+// ✅ แก้ไข: User Interface รองรับทั้ง camelCase (Backend) และ snake_case (TypeScript)
 export interface User {
-  user_id: ID;       // ✅ แก้จาก userId
+  user_id?: ID;       // snake_case (จาก TypeScript types)
+  userId?: ID;        // camelCase (จาก Backend - auth.service.ts)
   name: string;
   email: string;
   role: UserRole;

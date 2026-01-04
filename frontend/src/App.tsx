@@ -55,7 +55,12 @@ function App() {
     const savedUser = localStorage.getItem('user');
     if (savedUser && savedUser !== "undefined") {
       try {
-        setCurrentUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        // ✅ Debug: แสดงข้อมูล user ที่โหลดจาก localStorage
+        console.log('📦 Loaded user from localStorage:', parsedUser);
+        console.log('🔑 userId:', parsedUser.userId);
+        console.log('🔑 user_id:', parsedUser.user_id);
+        setCurrentUser(parsedUser);
       } catch (error) {
         console.error("Error parsing user from localStorage", error);
         localStorage.removeItem('user');
@@ -142,6 +147,15 @@ function App() {
       return originOk && destOk && dateOk
     })
   }, [search.destination, search.origin, search.travelDate, flights])
+
+  // ✅ Helper function: ดึง userId ที่ถูกต้อง
+  const getUserId = (user: User | null): ID => {
+    if (!user) return 0;
+    // ลองดึง userId (camelCase จาก Backend) ก่อน, ถ้าไม่มีใช้ user_id (snake_case)
+    const id = user.userId ?? user.user_id ?? 0;
+    console.log('🆔 Getting userId:', { userId: user.userId, user_id: user.user_id, result: id });
+    return id;
+  };
 
   // =========================================================
   // 🔥 ส่วน UI: แยกการแสดงผลตามสถานะ Login
@@ -302,7 +316,7 @@ function App() {
           <section style={{ textAlign: 'left', position: 'sticky', top: '100px' }}>
             {selectedFlight ? (
               <BookingPanel 
-                  userId={currentUser.user_id}   
+                  userId={getUserId(currentUser)}
                   flight={selectedFlight}        
                   onBooked={(booking) => {       
                      setLatestBooking(booking);
@@ -337,7 +351,7 @@ function App() {
       {/* Modal ประวัติการจอง */}
       {showMyBookings && (
         <MyBookings 
-            userId={currentUser.user_id} 
+            userId={getUserId(currentUser)}
             onClose={() => setShowMyBookings(false)} 
         />
       )}
