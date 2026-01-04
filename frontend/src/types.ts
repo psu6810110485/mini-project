@@ -1,5 +1,6 @@
 // frontend/src/types.ts
 
+// ✅ ใช้ number ให้ตรงกับ Database ID
 export type ID = number
 
 // ---------- API Helpers ----------
@@ -17,7 +18,8 @@ export type ApiError = {
 }
 
 // ---------- Auth & Roles ----------
-export type UserRole = 'ADMIN' | 'USER'
+// ✅ แก้ไข: เปลี่ยนเป็น string เพื่อรองรับทั้ง 'admin', 'ADMIN' (แก้ปัญหาตัวแดงใน App.tsx)
+export type UserRole = string; 
 
 export type AuthToken = string
 
@@ -39,46 +41,48 @@ export interface RegisterRequest {
 
 // ---------- Domain Models ----------
 
-// ✅ แก้ไข: User Interface รองรับทั้ง camelCase (Backend) และ snake_case (TypeScript)
+// ✅ User Interface รองรับทั้ง camelCase และ snake_case
 export interface User {
   user_id?: ID;       // snake_case (จาก TypeScript types)
-  userId?: ID;        // camelCase (จาก Backend - auth.service.ts)
+  userId?: ID;        // camelCase (เผื่อ Backend ส่งมาแบบเก่า)
   name: string;
   email: string;
   role: UserRole;
 }
 
 export interface Flight {
-  flight_id: ID;           // ✅ แก้จาก flightId
-  flight_code: string;     // ✅ แก้จาก flightCode
+  flight_id: ID;           
+  flight_code: string;     
   origin: string;
   destination: string;
-  travel_date: IsoDateTimeString; // ✅ แก้จาก travelDate (สำคัญมาก!)
-  price: number | string;  // รองรับทั้ง string/number กันเหนียว
-  available_seats: number; // ✅ แก้จาก availableSeats
+  travel_date: IsoDateTimeString; 
+  price: number | string;  
+  available_seats: number; 
   status: 'Active' | 'Cancelled' | string;
 }
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled'
 
 export interface Booking {
-  booking_id: ID;    // ✅ แก้จาก bookingId
-  user_id: ID;       // ✅ แก้จาก userId
-  flight_id: ID;     // ✅ แก้จาก flightId
-  seat_count: number;// ✅ แก้จาก seatCount
-  total_price: number;// ✅ แก้จาก totalPrice
+  booking_id: ID;    
+  user_id: ID;       
+  flight_id: ID;     
+  seat_count: number;
+  total_price: number;
   status: BookingStatus;
-  booking_time: IsoDateTimeString; // ✅ แก้จาก bookingTime
+  booking_time: IsoDateTimeString; 
+  // เผื่อ Join ข้อมูลเที่ยวบินมาแสดงในหน้า MyBookings
+  flight?: Flight;
 }
 
 // ---------- UI / Frontend-Specific Types ----------
 export interface FlightSearchParams {
   origin?: string
   destination?: string
-  travelDate?: string // อันนี้เป็น State ของฟอร์ม เก็บไว้แบบเดิมได้
+  travelDate?: string 
 }
 
 export interface CreateBookingRequest {
-  flight_id: ID;     // ✅ แก้ให้ตรง Backend
-  seat_count: number;// ✅ แก้ให้ตรง Backend
+  flight_id: ID;     
+  seat_count: number;
 }

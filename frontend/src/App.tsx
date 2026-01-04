@@ -226,7 +226,8 @@ function App() {
              <div style={{ fontSize: '0.75rem', color: 'var(--rich-gold)', fontWeight: 'bold' }}>{currentUser.role}</div>
           </div>
           
-          {currentUser.role === 'USER' && (
+          {/* ✅ แก้ไข: อนุญาตให้แสดงปุ่มประวัติ ไม่ว่าจะเป็น user หรือ admin (ตัวเล็ก/ตัวใหญ่) */}
+          {['USER', 'user', 'ADMIN', 'admin'].includes(currentUser.role || '') && (
             <button
               onClick={() => setShowMyBookings(true)}
               style={{
@@ -285,8 +286,8 @@ function App() {
            <FlightSearchForm onSearch={setSearch} />
         </div>
 
-        {/* ส่วน Admin (ถ้ามีสิทธิ์) */}
-        {currentUser.role === 'ADMIN' && (
+        {/* ✅ แก้ไข: เช็คสิทธิ์ Admin ให้รองรับทั้ง 'admin' (ตัวเล็ก) และ 'ADMIN' (ตัวใหญ่) */}
+        {(currentUser.role === 'ADMIN' || currentUser.role === 'admin') && (
           <div style={{ marginBottom: '30px' }}>
             <AdminFlightManager 
               flights={flights} 
@@ -319,12 +320,12 @@ function App() {
                   userId={getUserId(currentUser)}
                   flight={selectedFlight}        
                   onBooked={(booking) => {       
-                     setLatestBooking(booking);
-                     setFlights(flights.map(f => 
-                         f.flight_id === booking.flight_id 
-                         ? { ...f, available_seats: f.available_seats - booking.seat_count } 
-                         : f
-                     ));
+                      setLatestBooking(booking);
+                      setFlights(flights.map(f => 
+                          f.flight_id === booking.flight_id 
+                          ? { ...f, available_seats: f.available_seats - booking.seat_count } 
+                          : f
+                      ));
                   }} 
               />
             ) : (
