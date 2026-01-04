@@ -19,9 +19,14 @@ interface BookingWithFlight extends Booking {
 }
 
 export default function MyBookings({ userId, onClose }: MyBookingsProps) {
+  // --- STATE เดิม (ห้ามลบ) ---
   const [bookings, setBookings] = useState<BookingWithFlight[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // 🔥 [NEW] เพิ่ม State สำหรับควบคุม Modal ยกเลิกแบบ Premium
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [bookingIdToCancel, setBookingIdToCancel] = useState<ID | null>(null)
 
   useEffect(() => {
     console.log('🎯 MyBookings Component mounted with userId:', userId);
@@ -54,35 +59,52 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
     }
   }
 
-  const handleCancelBooking = async (bookingId: ID) => {
-    if (!window.confirm('คุณต้องการยกเลิกการจองนี้ใช่หรือไม่?')) return
+  // 🔥 [NEW FUNCTION] ฟังก์ชัน 1: กดปุ่มกากบาท -> แค่เปิด Modal ถาม (ยังไม่ลบจริง)
+  const handleRequestCancel = (bookingId: ID) => {
+    setBookingIdToCancel(bookingId) // จำ ID ไว้
+    setShowCancelModal(true)        // เปิด Modal
+  }
 
+  // 🔥 [UPDATED FUNCTION] ฟังก์ชัน 2: ยืนยันการลบจริง (ย้าย Logic เดิมมาไว้ตรงนี้)
+  const handleConfirmCancel = async () => {
+    // ปิด Modal ก่อน
+    setShowCancelModal(false)
+
+    // Safety check
+    if (!bookingIdToCancel) return
+
+    // --- LOGIC เดิมของคุณ (เริ่ม) ---
     try {
-      console.log('🔄 Cancelling booking:', bookingId);
+      console.log('🔄 Cancelling booking:', bookingIdToCancel);
       
-      await api.patch(`/bookings/${bookingId}`, { status: 'cancelled' })
+      // เรียก API
+      await api.patch(`/bookings/${bookingIdToCancel}`, { status: 'cancelled' })
       
       console.log('✅ Booking cancelled successfully');
       
-      // ✅ อัปเดต State
+      // ✅ อัปเดต State (Logic เดิม)
       setBookings(prev => 
         prev.map(b => 
-          b.booking_id === bookingId 
+          b.booking_id === bookingIdToCancel 
             ? { ...b, status: 'cancelled' } 
             : b
         )
       )
       
-      alert('✅ ยกเลิกการจองสำเร็จ')
+      // alert('✅ ยกเลิกการจองสำเร็จ') // (Optional: Comment ไว้เพราะ Modal สื่อสารชัดเจนแล้ว)
     } catch (err: any) {
       console.error('❌ Failed to cancel booking:', err)
       alert('ยกเลิกการจองไม่สำเร็จ: ' + (err.response?.data?.message || 'เกิดข้อผิดพลาด'))
+    } finally {
+      // Reset ID
+      setBookingIdToCancel(null)
     }
+    // --- LOGIC เดิมของคุณ (จบ) ---
   }
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay หลัก */}
       <div 
         onClick={onClose}
         style={{
@@ -97,7 +119,7 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
         }}
       />
 
-      {/* Modal */}
+      {/* Modal แสดงรายการจอง (ตัวเดิม) */}
       <div style={{
         position: 'fixed',
         top: '50%',
@@ -363,10 +385,11 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
                   </div>
 
                   {/* Cancel Button */}
+                  {/* 🔥 [EDIT] แก้ไขให้เรียก handleRequestCancel แทนตัวเดิม */}
                   {booking.status === 'confirmed' && (
                     <div style={{ marginTop: '15px' }}>
                       <button
-                        onClick={() => handleCancelBooking(booking.booking_id)}
+                        onClick={() => handleRequestCancel(booking.booking_id)}
                         style={{
                           padding: '10px 20px',
                           borderRadius: '50px',
@@ -414,6 +437,107 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
           )}
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 🔥 PREMIUM CANCELLATION MODAL (เพิ่มใหม่ต่อท้ายสุด) 🔥 */}
+      {/* ========================================================================= */}
+      {showCancelModal && (
+        <div
+            style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.85)', // ดำโปร่งแสงเข้มๆ เน้นความสำคัญ
+            backdropFilter: 'blur(8px)', // เบลอฉากหลังเพื่อให้ Modal เด่น
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999,
+            animation: 'fadeIn 0.3s ease-out'
+            }}
+            onClick={() => setShowCancelModal(false)} // คลิกพื้นหลังเพื่อปิด
+        >
+            <div
+            style={{
+                background: 'linear-gradient(145deg, #2b0808, #3b1010)', // พื้นหลังแดงเลือดหมูมืดหรู ดูแพงและซีเรียส
+                borderRadius: '24px',
+                padding: '40px',
+                maxWidth: '450px', width: '90%',
+                border: '1px solid rgba(255, 99, 71, 0.4)', // ขอบแดงจางๆ ให้ดูมีมิติ
+                boxShadow: '0 25px 60px rgba(0,0,0,0.9)', // เงาลึกๆ
+                textAlign: 'center',
+                position: 'relative',
+                animation: 'bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+            {/* Icon ตกใจ */}
+            <div style={{ 
+                fontSize: '4rem', marginBottom: '20px', 
+                filter: 'drop-shadow(0 0 15px rgba(255, 69, 0, 0.6))',
+                animation: 'shake 0.5s ease-in-out'
+            }}>
+                ⚠️
+            </div>
+
+            <h2 style={{ 
+                fontFamily: 'Chonburi', color: '#ffcccb', margin: '0 0 15px', fontSize: '2rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+            }}>
+                ยืนยันการยกเลิก?
+            </h2>
+            
+            <p style={{ fontFamily: 'Prompt', color: '#e0e0e0', marginBottom: '35px', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                คุณต้องการยกเลิก Booking รหัส <br/>
+                <strong style={{ color: '#D4AF37', fontSize: '1.4rem', fontFamily: 'monospace' }}>#{bookingIdToCancel}</strong> <br/>
+                <span style={{ fontSize: '0.9rem', color: '#ff6b6b' }}>(การกระทำนี้ไม่สามารถเรียกคืนได้)</span>
+            </p>
+
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                {/* ปุ่มเปลี่ยนใจ */}
+                <button
+                onClick={() => setShowCancelModal(false)}
+                style={{
+                    padding: '14px 28px', borderRadius: '50px', 
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.05)', 
+                    color: '#fff', fontFamily: 'Prompt', cursor: 'pointer',
+                    fontSize: '1rem', transition: '0.2s', fontWeight: '500'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                เก็บไว้ก่อน
+                </button>
+
+                {/* ปุ่มลบจริง */}
+                <button
+                onClick={handleConfirmCancel}
+                style={{
+                    padding: '14px 35px', borderRadius: '50px', border: 'none',
+                    // Gradient แดง-ส้ม ให้ความรู้สึกว่าเป็นปุ่มอันตรายแต่พรีเมี่ยม
+                    background: 'linear-gradient(90deg, #d32f2f, #ff5722)', 
+                    color: '#fff', fontFamily: 'Prompt', fontWeight: 'bold', cursor: 'pointer',
+                    fontSize: '1.1rem', transition: '0.3s', 
+                    boxShadow: '0 5px 20px rgba(211, 47, 47, 0.4)'
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(211, 47, 47, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 5px 20px rgba(211, 47, 47, 0.4)';
+                }}
+                >
+                ใช่, ยกเลิกเลย
+                </button>
+            </div>
+
+            {/* Style Animation เฉพาะกิจสำหรับ Modal นี้ */}
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes bounceIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+                @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+            `}</style>
+            </div>
+        </div>
+      )}
     </>
   )
 }

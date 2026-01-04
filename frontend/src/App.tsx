@@ -1,3 +1,5 @@
+// App.tsx
+
 import './App.css'
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import BookingPanel from './components/BookingPanel' 
@@ -105,7 +107,9 @@ function App() {
       const created = mapFlightFromApi(response.data)
       setFlights((prev) => [created, ...prev.filter((f) => f.flight_id !== created.flight_id)])
       
-      alert("✅ เพิ่มเที่ยวบินสำเร็จเรียบร้อย!");
+      // ❌ [UPDATE] ปิด Alert เดิม เพื่อให้ AdminFlightManager แสดง Modal หรูๆ แทน
+      // alert("✅ เพิ่มเที่ยวบินสำเร็จเรียบร้อย!"); 
+
     } catch (error: any) {
       console.error('❌ Failed to create flight:', error);
       const msg = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
@@ -319,12 +323,12 @@ function App() {
                   userId={getUserId(currentUser)}
                   flight={selectedFlight}        
                   onBooked={(booking) => {       
-                     setLatestBooking(booking);
-                     setFlights(flights.map(f => 
-                         f.flight_id === booking.flight_id 
-                         ? { ...f, available_seats: f.available_seats - booking.seat_count } 
-                         : f
-                     ));
+                       setLatestBooking(booking);
+                       setFlights(flights.map(f => 
+                           f.flight_id === booking.flight_id 
+                           ? { ...f, available_seats: f.available_seats - booking.seat_count } 
+                           : f
+                       ));
                   }} 
               />
             ) : (
