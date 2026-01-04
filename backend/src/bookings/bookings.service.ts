@@ -9,6 +9,8 @@ export class BookingsService {
   constructor(
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
+    @InjectRepository(Flight)
+    private flightRepository: Repository<Flight>,
     private dataSource: DataSource,
   ) {}
 
@@ -55,12 +57,62 @@ export class BookingsService {
     }
   }
 
-  // ✅ Method ใหม่: ดึงประวัติการจองพร้อมข้อมูลเที่ยวบิน
+  // ✅ Method ปรับปรุงใหม่: ดึงประวัติการจองพร้อมข้อมูลเที่ยวบิน
   async findByUserId(userId: number) {
-    return await this.bookingRepository.find({
-      where: { user_id: userId },
-      relations: ['flight'], // ✅ ดึงข้อมูล Flight มาด้วย (ต้องมี @ManyToOne ใน Entity)
-      order: { booking_time: 'DESC' }, // เรียงจากใหม่ไปเก่า
+    try {
+      // ใช้ QueryBuilder แทน relations เพื่อความแม่นยำ
+      const bookings = await this.bookingRepository
+        .createQueryBuilder('booking')
+        .leftJoinAndSelect('booking.flight', 'flight')
+        .where('booking.user_id = :userId', { userId })
+        .orderBy('booking.booking_time', 'DESC')
+        .getMany();
+
+      // ✅ แปลง response ให้ตรงกับ Frontend (lowercase status)
+      return bookings.map(booking => ({
+        booking_id: booking.booking_id,
+        user_id: booking.user_id,
+        flight_id: booking.flight_id,
+        seat_count: booking.seat_count,
+        total_price: booking.total_price,
+        status: booking.status.toLowerCase(), // แปลง "Confirmed" → "confirmed"
+        booking_time: booking.booking_time,
+        flight: booking.flight ? {
+          flight_code: booking.flight.flight_code,
+          origin: booking.flight.origin,
+          destination: booking.flight.destination,
+          travel_date: booking.flight.travel_date
+        } : undefined
+      }));
+    } catch (error) {
+      console.error('❌ Error fetching bookings:', error);
+      throw new BadRequestException('ไม่สามารถดึงข้อมูลการจองได้');
+    }
+  }
+
+  // ✅ Method ใหม่: อัปเดตสถานะการจอง (สำหรับยกเลิก)
+  async updateStatus(bookingId: number, status: string) {
+    const booking = await this.bookingRepository.findOne({
+      where: { booking_id: bookingId }
     });
+
+    if (!booking) {
+      throw new NotFoundException('ไม่พบการจองที่ระบุ');
+    }
+
+    // ถ้ายกเลิกการจอง ให้คืนที่นั่งกลับไป
+    if (status.toLowerCase() === 'cancelled' && booking.status.toLowerCase() !== 'cancelled') {
+      const flight = await this.flightRepository.findOne({
+        where: { flight_id: booking.flight_id }
+      });
+
+      if (flight) {
+        flight.available_seats += booking.seat_count;
+        await this.flightRepository.save(flight);
+      }
+    }
+
+    booking.status = status;
+    return await this.bookingRepository.save(booking);
   }
 }

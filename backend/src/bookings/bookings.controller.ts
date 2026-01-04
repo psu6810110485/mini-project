@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Req, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, Param, Patch } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -20,10 +20,27 @@ export class BookingsController {
     );
   }
 
-  // ✅ Endpoint ใหม่: ดึงประวัติการจองของ User
+  // ✅ Endpoint เดิม: ดึงประวัติการจองของ User (เก็บไว้)
   @Get('my-bookings/:userId')
   @UseGuards(JwtAuthGuard)
   async getMyBookings(@Param('userId') userId: string) {
     return await this.bookingsService.findByUserId(Number(userId));
+  }
+
+  // ✅ Endpoint ใหม่: ดึงประวัติการจองของ User (URL ที่ Frontend เรียก)
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuard)
+  async getUserBookings(@Param('userId') userId: string) {
+    return await this.bookingsService.findByUserId(Number(userId));
+  }
+
+  // ✅ เพิ่มใหม่: Endpoint สำหรับยกเลิกการจอง
+  @Patch(':bookingId')
+  @UseGuards(JwtAuthGuard)
+  async updateBookingStatus(
+    @Param('bookingId') bookingId: string,
+    @Body() body: { status: string }
+  ) {
+    return await this.bookingsService.updateStatus(Number(bookingId), body.status);
   }
 }
