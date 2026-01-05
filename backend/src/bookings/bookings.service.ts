@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common'; // เพิ่ม ConflictException
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, OptimisticLockVersionMismatchError } from 'typeorm'; // เพิ่ม Error นี้
 import { Booking } from '../entities/booking.entity';
 import { Flight } from '../entities/flight.entity';
 
@@ -20,6 +20,7 @@ export class BookingsService {
     await queryRunner.startTransaction();
 
     try {
+      // ดึงข้อมูล Flight (TypeORM จะดึง version มาด้วยอัตโนมัติ)
       const flight = await queryRunner.manager.findOne(Flight, {
         where: { flight_id: flightId },
       });
@@ -32,7 +33,10 @@ export class BookingsService {
         throw new BadRequestException(`ที่นั่งไม่พอ (เหลือ: ${flight.available_seats})`);
       }
 
+      // ตัดที่นั่ง
       flight.available_seats -= numSeats;
+      
+      // บันทึก: ถ้า version ใน db ไม่ตรงกับที่ดึงมา (มีคนอื่น save ไปก่อนหน้า) จะเกิด Error
       await queryRunner.manager.save(flight);
 
       const booking = queryRunner.manager.create(Booking, {
@@ -51,13 +55,19 @@ export class BookingsService {
 
     } catch (err) {
       await queryRunner.rollbackTransaction();
+
+      // ⭐ [เพิ่มใหม่] เช็คว่า error เกิดจากการแย่งจอง (Optimistic Lock) หรือไม่ ⭐
+      if (err instanceof OptimisticLockVersionMismatchError) {
+        throw new ConflictException('ขออภัย มีผู้ทำรายการตัดหน้า กรุณาลองใหม่อีกครั้ง');
+      }
+
       throw err;
     } finally {
       await queryRunner.release();
     }
   }
 
-  // ✅ แก้ไข: ดึงประวัติการจองพร้อมข้อมูลเที่ยวบิน
+  // ✅ [ส่วนเดิม 100%] ดึงประวัติการจองพร้อมข้อมูลเที่ยวบิน
   async findByUserId(userId: number) {
     try {
       console.log('🔍 Fetching bookings for userId:', userId);
@@ -93,7 +103,7 @@ export class BookingsService {
     }
   }
 
-  // ✅ อัปเดตสถานะการจอง (สำหรับยกเลิก)
+  // ✅ [ส่วนเดิม 100%] อัปเดตสถานะการจอง (สำหรับยกเลิก)
   async updateStatus(bookingId: number, status: string) {
     const booking = await this.bookingRepository.findOne({
       where: { booking_id: bookingId },
