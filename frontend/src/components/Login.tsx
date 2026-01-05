@@ -8,7 +8,9 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  // State เดิม (ห้ามลบ)
+  // ==========================================
+  // 🟢 PART 1: LOGIC & STATE (ของเดิม ห้ามลบ)
+  // ==========================================
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -18,11 +20,14 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   
-  // State สำหรับ Popup
+  // State สำหรับ Popup เดิม
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [userNameForWelcome, setUserNameForWelcome] = useState('');
+
+  // 🔥 [NEW] เพิ่ม State สำหรับ Modal สมัครสมาชิกสำเร็จ (แทน alert)
+  const [showRegisterSuccessModal, setShowRegisterSuccessModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -34,11 +39,18 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   }, []);
 
+  // 🔥 [NEW] ฟังก์ชันสำหรับปิด Modal สมัครสมาชิก แล้วสลับไปหน้า Login
+  const handleCloseRegisterModal = () => {
+    setShowRegisterSuccessModal(false);
+    setIsLoginMode(true); // สลับไปโหมด Login
+    setPassword('');      // เคลียร์รหัสผ่าน
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (isLoginMode) {
-        // --- Login Logic ---
+        // --- Login Logic (ของเดิม) ---
         const loginData: LoginRequest = { email, password };
         const response = await api.post<any>('/auth/login', loginData);
         
@@ -67,13 +79,16 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         }
 
       } else {
-        // --- Register Logic ---
+        // --- Register Logic (อัปเกรดใหม่) ---
         const registerData = { name, email, password, role: 'USER' };
         await api.post('/auth/register', registerData);
         
-        alert('✅ สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
-        setIsLoginMode(true); 
-        setPassword('');
+        // ❌ ของเก่า: alert('✅ สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+        // ✅ ของใหม่: เรียกใช้ Modal แทน
+        setShowRegisterSuccessModal(true);
+        
+        // หมายเหตุ: การสลับ setIsLoginMode(true) จะย้ายไปทำใน handleCloseRegisterModal 
+        // เพื่อให้ User เห็น Modal ก่อนกดตกลง
       }
 
     } catch (error: any) {
@@ -95,10 +110,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  // ==========================================
+  // 🟢 PART 2: UI RENDER
+  // ==========================================
   return (
     <>
       {/* --------------------------------------------------- */}
-      {/* ✅ Modal 1: แจ้งเตือนความสำเร็จ (สีเขียว) */}
+      {/* ✅ Modal 1: Login สำเร็จ (สีเขียว - ดีไซน์เดิมที่สวยแล้ว) */}
       {/* --------------------------------------------------- */}
       {showSuccessModal && (
         <div style={{
@@ -125,7 +143,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </h2>
             <p style={{ fontFamily: 'Prompt', color: '#666', margin: 0, fontSize: '16px' }}>
               ยินดีต้อนรับคุณ <br/>
-              <strong style={{ color: 'var(--rich-gold)', fontSize: '18px' }}>{userNameForWelcome}</strong>
+              <strong style={{ color: '#D4AF37', fontSize: '18px' }}>{userNameForWelcome}</strong>
             </p>
             <p style={{ marginTop: '20px', fontSize: '14px', color: '#999', fontFamily: 'Prompt' }}>
               กำลังพาท่านไปที่หน้าหลัก...
@@ -135,7 +153,69 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       )}
 
       {/* --------------------------------------------------- */}
-      {/* ✅ Modal 2: แจ้งเตือนข้อผิดพลาด (สีแดง) */}
+      {/* 🔥 [NEW] Modal 1.5: Register สำเร็จ (Premium Design) */}
+      {/* --------------------------------------------------- */}
+      {showRegisterSuccessModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          zIndex: 10000,
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{
+            background: 'linear-gradient(160deg, #1e3c72 0%, #2a5298 100%)', // สีน้ำเงินหรู
+            padding: '40px', borderRadius: '30px',
+            textAlign: 'center', maxWidth: '400px', width: '90%',
+            boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
+            border: '2px solid rgba(255, 255, 255, 0.1)',
+            animation: 'bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          }}>
+            <div style={{ marginBottom: '25px' }}>
+               <div style={{
+                width: '90px', height: '90px', margin: '0 auto',
+                background: '#fff',
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '3rem', color: '#2a5298',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+              }}>🎉</div>
+            </div>
+            <h2 style={{ margin: '0 0 10px 0', fontFamily: 'Chonburi', color: '#fff', fontSize: '26px' }}>
+              สมัครสมาชิกสำเร็จ!
+            </h2>
+            <p style={{ fontFamily: 'Prompt', color: 'rgba(255,255,255,0.8)', margin: '0 0 30px 0', fontSize: '16px', lineHeight: '1.6' }}>
+              บัญชีของคุณพร้อมใช้งานแล้ว <br/> กรุณาเข้าสู่ระบบเพื่อเริ่มต้นการเดินทาง
+            </p>
+            
+            <button 
+              onClick={handleCloseRegisterModal}
+              style={{
+                background: '#fff',
+                color: '#1e3c72', 
+                border: 'none',
+                padding: '14px 40px', borderRadius: '50px',
+                fontFamily: 'Prompt', fontWeight: 'bold', fontSize: '16px',
+                cursor: 'pointer', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                width: '100%'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-3px)';
+                e.currentTarget.style.boxShadow = '0 15px 35px rgba(0,0,0,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+              }}
+            >
+              เข้าสู่ระบบทันที (Login)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --------------------------------------------------- */}
+      {/* ✅ Modal 2: แจ้งเตือนข้อผิดพลาด (สีแดง - ดีไซน์เดิม) */}
       {/* --------------------------------------------------- */}
       {showErrorModal && (
         <div style={{
@@ -185,7 +265,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       )}
 
       {/* --------------------------------------------------- */}
-      {/* 🚀 ส่วนฟอร์ม Login (Premium Design) */}
+      {/* 🚀 ส่วนฟอร์ม Login (Premium Design - ของเดิม) */}
       {/* --------------------------------------------------- */}
       <div 
         className="glass-panel" 
@@ -535,6 +615,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </span>
         </div>
       </div>
+      
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+      `}</style>
     </>
   );
 };
