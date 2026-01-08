@@ -26,8 +26,8 @@ export class Booking {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   booking_time: Date;
 
-  // ✅ Relation กับ Flight
-  @ManyToOne(() => Flight, { eager: false })
+  // ✅ Relation กับ Flight (เพิ่ม onDelete: 'CASCADE' เพื่อให้ลบ Flight ได้โดยไม่ติด FK)
+  @ManyToOne(() => Flight, { eager: false, onDelete: 'CASCADE' }) 
   @JoinColumn({ name: 'flight_id' })
   flight?: Flight;
 

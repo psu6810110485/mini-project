@@ -25,6 +25,12 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
     })
   }
 
+  // ✅ [NEW] ฟังก์ชันสำหรับล้างค่าการค้นหา
+  function handleClear() {
+    setForm(DEFAULT_SEARCH); // รีเซ็ตฟอร์มเป็นค่าว่าง
+    onSearch(DEFAULT_SEARCH); // สั่งค้นหาใหม่แบบไม่กรอง (แสดงทั้งหมด)
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       {/* ✅ แก้ไข: แยก Grid เป็น 2 ส่วน - บรรทัดแรก 3 ช่อง, บรรทัดที่ 2 ปุ่มค้นหา */}
@@ -190,8 +196,16 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
           </div>
         </div>
 
-        {/* ✅ บรรทัดที่ 2: ปุ่มค้นหา - แยกออกมาคนละบรรทัด */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '5px' }}>
+        {/* ✅ บรรทัดที่ 2: ปุ่มควบคุม (ค้นหา และ ล้างค่า) */}
+        <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', // จัดให้อยู่กึ่งกลางแนวตั้ง
+            marginTop: '10px',
+            gap: '30px' // ✅ [NEW] เว้นระยะห่างระหว่างปุ่มตามที่ขอ
+        }}>
+          
+          {/* ปุ่มค้นหา */}
           <button 
             type="submit" 
             className="btn-gold" 
@@ -226,11 +240,49 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
             <span style={{ fontSize: '1.2rem' }}>🔍</span>
             <span>ค้นหา</span>
           </button>
+
+          {/* ✅ [NEW] ปุ่มล้างค่า (Clear) - เพิ่มใหม่ด้านขวา */}
+          <button 
+            type="button" 
+            onClick={handleClear}
+            className="btn-clear"
+            style={{
+                height: '50px',
+                padding: '0 25px',
+                fontSize: '1rem',
+                borderRadius: '50px',
+                border: '1px solid #ccc',
+                background: 'transparent',
+                color: '#888',
+                fontWeight: 500,
+                fontFamily: 'Prompt',
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+            }}
+            onMouseOver={(e) => {
+                e.currentTarget.style.borderColor = '#ff4d4f';
+                e.currentTarget.style.color = '#ff4d4f';
+                e.currentTarget.style.backgroundColor = 'rgba(255, 77, 79, 0.05)';
+            }}
+            onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = '#ccc';
+                e.currentTarget.style.color = '#888';
+                e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <span style={{ fontSize: '1.1rem' }}>🧹</span>
+            <span>ล้างค่า</span>
+          </button>
+
         </div>
 
       </div>
 
-      {/* ✅ เพิ่ม CSS สำหรับ Focus Effect */}
+      {/* ✅ เพิ่ม CSS สำหรับ Focus Effect และ Responsive */}
       <style>{`
         .form-control:focus {
           outline: none;
@@ -262,6 +314,14 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
         @media (max-width: 768px) {
           form > div > div:first-child {
             grid-template-columns: 1fr !important;
+          }
+          /* ให้ปุ่มเรียงแนวตั้งบนมือถือ */
+          form > div > div:last-child {
+             flex-direction: column;
+             gap: 15px;
+          }
+          .btn-gold, .btn-clear {
+             width: 100%;
           }
         }
 
