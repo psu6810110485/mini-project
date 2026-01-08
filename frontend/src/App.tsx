@@ -213,13 +213,22 @@ function App() {
     const destination = (search.destination ?? '').trim().toLowerCase()
     const travelDate = search.travelDate ?? ''
 
-    return flights.filter((f) => {
-      const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
-      const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
-      const flightDate = toLocalYyyyMmDd(f.travel_date)
-      const dateOk = travelDate.length === 0 || flightDate === travelDate;
-      return originOk && destOk && dateOk
-    })
+    return flights
+      .filter((f) => {
+        const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
+        const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
+        const flightDate = toLocalYyyyMmDd(f.travel_date)
+        const dateOk = travelDate.length === 0 || flightDate === travelDate;
+        return originOk && destOk && dateOk
+      })
+      // ✅ [NEW] เรียงลำดับตามเวลาออกเดินทาง (น้อย -> มาก)
+      // เที่ยวบินที่ออกเดินทางก่อน จะแสดงขึ้นมาเป็นอันดับแรก
+      .sort((a, b) => {
+        const dateA = new Date(a.travel_date).getTime();
+        const dateB = new Date(b.travel_date).getTime();
+        return dateA - dateB; 
+      });
+
   }, [search.destination, search.origin, search.travelDate, flights])
 
   // ✅ Helper function: ดึง userId ที่ถูกต้อง
