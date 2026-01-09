@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Flight } from '../entities/flight.entity';
-import { CreateFlightDto } from './dto/create-flight.dto'; // ✅ นำเข้า DTO
+import { CreateFlightDto } from './dto/create-flight.dto';
 
 @Injectable()
 export class FlightsService {
@@ -23,23 +23,15 @@ export class FlightsService {
     return flight;
   }
 
-  // ✅ แก้ไข: จับคู่ตัวแปรจาก DTO (CamelCase) ไปยัง Database (Snake_case) ให้ถูกต้อง
+  // ✅ งานเดิม - จับคู่ DTO กับ Database
   async create(dto: CreateFlightDto): Promise<Flight> {
     const flight = this.flightRepository.create({
-      // ฝั่งซ้าย = ชื่อ Column ใน Database (Snake_case)
-      // ฝั่งขวา = ชื่อตัวแปรที่รับมาจาก DTO (CamelCase)
-      
-      flight_code: dto.flightCode,          // 👈 แก้จาก dto.flight_code เป็น dto.flightCode
+      flight_code: dto.flightCode,
       origin: dto.origin,
       destination: dto.destination,
-      
-      // หมายเหตุ: ถ้า DTO ส่งมาเป็น String ให้ใช้ new Date()
-      // ถ้าส่งมาเป็น Date อยู่แล้วก็ใช้ dto.travelDate ได้เลย
-      travel_date: new Date(dto.travelDate), // 👈 แก้จาก dto.travel_date เป็น dto.travelDate
-      
+      travel_date: new Date(dto.travelDate),
       price: dto.price,
-      available_seats: dto.availableSeats,   // 👈 แก้จาก dto.available_seats เป็น dto.availableSeats
-      
+      available_seats: dto.availableSeats,
       status: 'Active'
     });
     
@@ -59,12 +51,56 @@ export class FlightsService {
     }
   }
 
+  // ✅ งานเดิม - ตัดที่นั่ง (พร้อมป้องกัน Race Condition ด้วย @VersionColumn)
   async decrementSeats(flight_id: number, count: number): Promise<void> {
-    const flight = await this.findOne(flight_id); 
+    const flight = await this.findOne(flight_id);
+    
     if (flight.available_seats < count) {
       throw new BadRequestException('ขออภัย จำนวนที่นั่งว่างไม่เพียงพอ');
     }
-    flight.available_seats -= count; 
-    await this.flightRepository.save(flight);
+    
+    flight.available_seats -= count;
+    
+    try {
+      await this.flightRepository.save(flight);
+      console.log(`✅ ตัดที่นั่ง ${count} ที่นั่งจากเที่ยวบิน ${flight.flight_code} สำเร็จ`);
+    } catch (error: any) {
+      // ✅ จัดการ Optimistic Lock Error (Race Condition)
+      if (error.name === 'OptimisticLockVersionMismatchError') {
+        throw new ConflictException('ที่นั่งถูกจองไปแล้วในขณะนี้ กรุณาลองใหม่อีกครั้ง');
+      }
+      throw error;
+    }
+  }
+
+  // 🔥 ✅ [NEW] ฟังก์ชันยกเลิกเที่ยวบิน (ใช้งาน Status Field)
+  async cancelFlight(flight_id: number): Promise<Flight> {
+    const flight = await this.findOne(flight_id);
+
+    // ป้องกันการยกเลิกซ้ำ
+    if (flight.status === 'Cancelled') {
+      throw new BadRequestException(`เที่ยวบิน ${flight.flight_code} ถูกยกเลิกไปแล้ว`);
+    }
+
+    flight.status = 'Cancelled';
+    const updated = await this.flightRepository.save(flight);
+    
+    console.log(`✅ ยกเลิกเที่ยวบิน ${flight.flight_code} สำเร็จ`);
+    return updated;
+  }
+
+  // 🔥 ✅ [NEW] ฟังก์ชันเปิดเที่ยวบินใหม่ (กรณียกเลิกผิด)
+  async reactivateFlight(flight_id: number): Promise<Flight> {
+    const flight = await this.findOne(flight_id);
+
+    if (flight.status === 'Active') {
+      throw new BadRequestException(`เที่ยวบิน ${flight.flight_code} เปิดให้บริการอยู่แล้ว`);
+    }
+
+    flight.status = 'Active';
+    const updated = await this.flightRepository.save(flight);
+    
+    console.log(`✅ เปิดให้บริการเที่ยวบิน ${flight.flight_code} อีกครั้ง`);
+    return updated;
   }
 }

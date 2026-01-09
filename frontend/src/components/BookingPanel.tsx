@@ -18,25 +18,24 @@ function nowIso(): string {
 
 export default function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) {
   // =========================================================================
-  // --- PART 1: LOGIC & STATE (ส่วนนี้คือ "งานเก่า" ห้ามลบ ห้ามแก้ Logic) ---
+  // --- PART 1: LOGIC & STATE ---
   // =========================================================================
   const [seatCount, setSeatCount] = useState<number>(1)
-  const [isBooked, setIsBooked] = useState(false)
+  // ❌ ลบ isBooked ออกแล้ว เพราะไม่ได้ใช้ (แก้ Warning)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
-  // 🔥 [NEW] State สำหรับควบคุม Modal ยืนยันก่อนจอง
+  // 🔥 State สำหรับควบคุม Modal ยืนยันก่อนจอง
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   useEffect(() => {
     setSeatCount(1);
-    setIsBooked(false)
     setErrorMessage('')
     setLatestBooking(null)
     setShowSuccessModal(false)
-    setShowConfirmModal(false) // Reset confirm modal เมื่อเปลี่ยน Flight
+    setShowConfirmModal(false) 
   }, [flight]);
 
   const maxSeats = Math.max(0, Number(flight.available_seats))
@@ -47,24 +46,19 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
     setSeatCount(Math.min(Math.max(next, 1), Math.max(maxSeats, 1)))
   }
 
-  // 🔥 [MODIFIED] ฟังก์ชันที่ 1: เช็คเงื่อนไขเบื้องต้น แล้วเปิด Modal ยืนยัน (แทนที่จะจองเลย)
+  // ฟังก์ชันที่ 1: เช็คเงื่อนไขเบื้องต้น แล้วเปิด Modal ยืนยัน
   function handlePreBook() {
     if (maxSeats <= 0) {
       setErrorMessage('ไม่มีที่นั่งว่าง')
       return
     }
-    // เคลียร์ Error เดิมก่อน
     setErrorMessage('')
-    // เปิดหน้าต่างยืนยัน (Confirmation Modal)
     setShowConfirmModal(true) 
   }
 
-  // 🔥 [NEW] ฟังก์ชันที่ 2: ทำการจองจริง (เรียก API) จะถูกเรียกเมื่อกดยืนยันใน Modal
+  // ฟังก์ชันที่ 2: ทำการจองจริง (เรียก API)
   async function handleConfirmedBooking() {
-    // ปิด Modal ยืนยันก่อน
     setShowConfirmModal(false)
-    
-    // เริ่ม Loading
     setIsLoading(true)
     setErrorMessage('')
 
@@ -91,8 +85,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
 
       onBooked(booking)
       setLatestBooking(booking)
-      setIsBooked(true)
-      setShowSuccessModal(true)
+      setShowSuccessModal(true) // ✅ ใช้ตัวนี้แสดงผลแทน
 
     } catch (error: any) {
       console.error('❌ Booking failed:', error)
@@ -104,7 +97,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
   }
 
   // =========================================================================
-  // --- PART 2: UI RENOVATION (รีโนเวทใหม่ ให้ดูแพงและแก้ปัญหาพื้นหลังจม) ---
+  // --- PART 2: UI (Premium Design) ---
   // =========================================================================
   return (
     <>
@@ -114,21 +107,19 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
         style={{ 
           textAlign: 'left', 
           padding: '35px', 
-          // 🔥 แก้ปัญหาพื้นหลังกินสี: ใช้พื้นหลังสีมืดเข้ม (Dark Obsidian) 
-          // ความเข้ม 0.85 จะช่วยบังภาพพื้นหลังที่รกๆ ได้ดีมาก
           background: 'rgba(15, 23, 42, 0.85)', 
           backdropFilter: 'blur(20px)', 
-          borderTop: '4px solid #D4AF37', // เพิ่มเส้นทองด้านบน
+          borderTop: '4px solid #D4AF37', 
           borderBottom: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '24px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)' // เงาลึกขึ้นให้ดูลอยออกมา
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)' 
         }}
       >
         {/* --- Header Section --- */}
         <h2 style={{ 
           marginTop: 0, 
           fontFamily: 'Chonburi', 
-          color: '#D4AF37', // สีทองชัดเจน
+          color: '#D4AF37', 
           borderBottom: '1px solid rgba(212, 175, 55, 0.3)', 
           paddingBottom: '20px',
           marginBottom: '25px',
@@ -144,11 +135,10 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
         
         <div style={{ display: 'grid', gap: 25 }}>
           
-          {/* --- Flight Info Card (แยกส่วนข้อมูลเที่ยวบินให้ชัดเจน) --- */}
+          {/* --- Flight Info Card --- */}
           <div style={{ 
               padding: '20px', 
               fontFamily: 'Prompt',
-              // ใส่พื้นหลังแยกอีกชั้น เพื่อแก้ปัญหา Text จม อย่างสมบูรณ์แบบ
               background: 'rgba(0, 0, 0, 0.4)', 
               borderRadius: '16px',
               border: '1px solid rgba(255,255,255,0.08)',
@@ -158,12 +148,12 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                 <div>
                     <div style={{ 
                       fontWeight: 700, 
-                      fontSize: '2rem', // ขยายใหญ่ขึ้น
+                      fontSize: '2rem', 
                       color: '#fff', 
                       fontFamily: 'Chonburi', 
                       marginBottom: '8px',
                       letterSpacing: '2px',
-                      textShadow: '0 4px 12px rgba(0,0,0,0.8)' // เงาตัวหนังสือเข้มๆ
+                      textShadow: '0 4px 12px rgba(0,0,0,0.8)' 
                     }}>
                       {flight.flight_code}
                     </div>
@@ -188,7 +178,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
             </div>
           </div>
 
-          {/* --- Seat Selection (UI ปรับปรุง) --- */}
+          {/* --- Seat Selection --- */}
           <div style={{ 
             fontFamily: 'Prompt', 
             background: 'rgba(255,255,255,0.03)', 
@@ -214,8 +204,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                     fontWeight: 'bold', fontSize: '1.8rem', color: seatCount <= 1 ? '#666' : '#111',
                     transition: 'all 0.2s', boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
                   }}
-                  onMouseEnter={(e) => !isLoading && seatCount > 1 && (e.currentTarget.style.transform = 'translateY(-2px)')}
-                  onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)')}
               >-</button>
 
               <div style={{ position: 'relative' }}>
@@ -230,7 +218,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                         width: '100px', textAlign: 'center', fontSize: '2.2rem', 
                         fontWeight: 'bold', margin: 0, borderRadius: '16px',
                         height: '65px', 
-                        border: '2px solid #D4AF37', // ขอบทอง
+                        border: '2px solid #D4AF37', 
                         background: 'rgba(0,0,0,0.3)', color: '#fff',
                         fontFamily: 'Chonburi',
                         boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)'
@@ -249,8 +237,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                     fontWeight: 'bold', fontSize: '1.8rem', color: seatCount >= maxSeats ? '#666' : '#111',
                     transition: 'all 0.2s', boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
                   }}
-                  onMouseEnter={(e) => !isLoading && seatCount < maxSeats && (e.currentTarget.style.transform = 'translateY(-2px)')}
-                  onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)')}
               >+</button>
             </div>
           </div>
@@ -262,10 +248,10 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                 <div style={{ 
                   fontSize: '3rem', 
                   fontWeight: '800', 
-                  color: '#2ecc71', // เขียวสว่าง
+                  color: '#2ecc71', 
                   fontFamily: 'Prompt', 
                   lineHeight: 1,
-                  textShadow: '0 0 25px rgba(46, 204, 113, 0.4)', // Effect เรืองแสง
+                  textShadow: '0 0 25px rgba(46, 204, 113, 0.4)', 
                   letterSpacing: '-1px'
                 }}>
                     {new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(totalPrice)}
@@ -278,7 +264,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                 </div>
               )}
 
-             {/* 🔥 ปุ่มนี้เปลี่ยนไปเรียก handlePreBook เพื่อเปิด Confirmation Modal แทน */}
              <button 
                type="button" 
                className="btn-primary" 
@@ -291,12 +276,11 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                  borderRadius: '50px',
                  opacity: isLoading ? 0.7 : 1,
                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                 // ใช้ Gradient ทองแบบ Premium Gold
                  background: isLoading ? '#666' : 'linear-gradient(90deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%)', 
                  backgroundSize: '200% auto',
                  boxShadow: '0 10px 30px rgba(170, 119, 28, 0.5)',
                  border: 'none',
-                 color: '#3d2b05', // Text สีน้ำตาลเข้ม
+                 color: '#3d2b05', 
                  fontWeight: '800',
                  fontFamily: 'Prompt',
                  letterSpacing: '1px',
@@ -321,9 +305,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
         </div>
       </section>
 
-      {/* ===================================================================== */}
-      {/* 🔥 [NEW] CONFIRMATION MODAL (หน้าต่างยืนยันก่อนจอง) 🔥 */}
-      {/* ===================================================================== */}
+      {/* --- CONFIRMATION MODAL --- */}
       {showConfirmModal && (
         <div
           style={{
@@ -386,14 +368,12 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
         </div>
       )}
 
-      {/* ===================================================================== */}
-      {/* 🔥 PREMIUM BOARDING PASS SUCCESS MODAL (แก้จากกล่องเขียวที่ดู "กาก") 🔥 */}
-      {/* ===================================================================== */}
+      {/* --- PREMIUM BOARDING PASS SUCCESS MODAL --- */}
       {showSuccessModal && latestBooking && (
         <div
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0, 0, 0, 0.92)', // พื้นหลังมืดสนิทเน้นตั๋ว
+            background: 'rgba(0, 0, 0, 0.92)', 
             backdropFilter: 'blur(10px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
             animation: 'fadeIn 0.5s ease-out', padding: '20px'
@@ -402,32 +382,31 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
         >
           <div
             style={{
-              // Design เป็น Boarding Pass รูปทรงตั๋ว
-              background: 'linear-gradient(160deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', // Gradient น้ำเงินเข้ม-ดำ
+              background: 'linear-gradient(160deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', 
               borderRadius: '24px',
               maxWidth: '550px', width: '100%',
-              boxShadow: '0 40px 80px rgba(0, 0, 0, 1)', // เงาลอยสูง
-              border: '2px solid rgba(197, 160, 89, 0.5)', // ขอบทอง
+              boxShadow: '0 40px 80px rgba(0, 0, 0, 1)', 
+              border: '2px solid rgba(197, 160, 89, 0.5)', 
               position: 'relative',
-              animation: 'slideUp 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)', // เด้งดึ๋งสวยๆ
+              animation: 'slideUp 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)', 
               overflow: 'hidden',
               color: '#fff'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* --- Section บน: Header Success --- */}
+            {/* Header Success */}
             <div style={{ padding: '45px 40px 30px', textAlign: 'center', background: 'rgba(197, 160, 89, 0.08)' }}>
                 <div style={{ 
                   width: '100px', height: '100px', margin: '0 auto 25px',
-                  background: 'linear-gradient(135deg, #28a745, #20c997)', // เขียว Gradient
+                  background: 'linear-gradient(135deg, #28a745, #20c997)', 
                   borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '3.5rem', boxShadow: '0 0 50px rgba(40, 167, 69, 0.6)', // เรืองแสงเขียว
+                  fontSize: '3.5rem', boxShadow: '0 0 50px rgba(40, 167, 69, 0.6)', 
                   animation: 'bounce 1s ease-in-out infinite alternate'
                 }}>✓</div>
                 
                 <h1 style={{ 
                   fontFamily: 'Chonburi', fontSize: '3rem', margin: '0 0 10px', 
-                  background: 'linear-gradient(to right, #c5a059, #fbd287, #c5a059)', // Text ทองไล่เฉด
+                  background: 'linear-gradient(to right, #c5a059, #fbd287, #c5a059)', 
                   WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                   filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))'
                 }}>
@@ -438,12 +417,11 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                 </p>
             </div>
 
-            {/* --- Ticket Stub Divider (รอยประฉีกตั๋ว) --- */}
+            {/* Ticket Stub Divider */}
             <div style={{ 
                 height: '30px', 
-                background: '#0f2027', // สีเดียวกับพื้นหลัง modal ส่วนล่าง
+                background: '#0f2027', 
                 position: 'relative',
-                // สร้างลายจุดรอยประ
                 backgroundImage: 'radial-gradient(circle at 10px 15px, #000 6px, transparent 7px)',
                 backgroundSize: '20px 30px',
                 backgroundPosition: '-10px 0px',
@@ -452,9 +430,8 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                 opacity: 0.8
             }}></div>
 
-            {/* --- Section ล่าง: Ticket Details --- */}
+            {/* Ticket Details */}
             <div style={{ padding: '30px 45px 50px', fontFamily: 'Prompt' }}>
-               {/* Booking ID Row */}
                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px' }}>
                    <div>
                        <div style={{ color: '#90a4ae', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Booking Ref</div>
@@ -470,7 +447,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                    </div>
                </div>
 
-               {/* Route Row (Large) */}
                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '30px 0' }}>
                    <div style={{ textAlign: 'center' }}>
                        <div style={{ fontSize: '2.8rem', fontWeight: '900', fontFamily: 'Chonburi', lineHeight: 1 }}>{flight.origin}</div>
@@ -481,7 +457,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                    </div>
                </div>
 
-               {/* Details Footer */}
                <div style={{ 
                  background: 'rgba(255,255,255,0.06)', 
                  borderRadius: '16px', 
@@ -505,7 +480,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
                </div>
             </div>
 
-            {/* ปุ่มปิด (X) */}
             <button
               onClick={() => setShowSuccessModal(false)}
               style={{
@@ -520,7 +494,6 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
             >✕</button>
           </div>
 
-          {/* Style for Animations */}
           <style>{`
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
             @keyframes slideUp { from { opacity: 0; transform: translateY(100px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }

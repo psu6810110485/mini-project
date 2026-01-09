@@ -1,10 +1,16 @@
+// backend/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { AuthModule } from './auth/auth.module';
 import { FlightsModule } from './flights/flights.module';
 import { BookingsModule } from './bookings/bookings.module';
+
+// ✅ Import Entity ใหม่
+import { User } from './entities/user.entity';
+import { Flight } from './entities/flight.entity';
+import { Booking } from './entities/booking.entity';
+import { FlightAmenity } from './entities/flight-amenity.entity'; // ✅ เพิ่มบรรทัดนี้
 
 @Module({
   imports: [
@@ -12,19 +18,16 @@ import { BookingsModule } from './bookings/bookings.module';
       envFilePath: '.env',
       isGlobal: true,
     }),
-
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        // 🔒 ค่าที่คุณใช้จริง (ตามของเก่า)
         const host = '127.0.0.1';
         const port = 5444;
         const username = 'admin';
         const password = 'newpassword999';
         const database = 'flight_booking_db';
 
-        // 🐛 DEBUG ช่วยเช็คการเชื่อมต่อ
         console.log('--- DEBUG: TRYING TO CONNECT ---');
         console.log(`Target: ${host}:${port}`);
         console.log(`User: ${username} / Pass: ${password}`);
@@ -38,20 +41,20 @@ import { BookingsModule } from './bookings/bookings.module';
           username,
           password,
           database,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true, // ⚠️ ปิดใน production
-          logging: false,
           
-          // 🚀 เพิ่มส่วนนี้เพื่อแก้ปัญหาถาวร
+          // ✅ แก้ไขจาก pattern เป็น explicit imports
+          entities: [User, Flight, Booking, FlightAmenity], // ✅ เพิ่ม FlightAmenity
+          
+          synchronize: true,
+          logging: false,
           autoLoadEntities: true,
-          retryAttempts: 10,           // ลองเชื่อมต่อใหม่ 10 ครั้ง
-          retryDelay: 3000,            // รอ 3 วินาทีต่อครั้ง
-          connectTimeoutMS: 10000,     // timeout 10 วินาที
-          maxQueryExecutionTime: 5000, // query ไม่เกิน 5 วินาที
+          retryAttempts: 10,
+          retryDelay: 3000,
+          connectTimeoutMS: 10000,
+          maxQueryExecutionTime: 5000,
         };
       },
     }),
-
     AuthModule,
     FlightsModule,
     BookingsModule,
