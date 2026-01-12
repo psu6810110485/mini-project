@@ -1,77 +1,31 @@
-<<<<<<< HEAD
-# mini-project
-=======
-# React + TypeScript + Vite
+# Mini-Project: Flight Booking System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Project Description
+ระบบเว็บแอปพลิเคชันสำหรับการจองตั๋วเครื่องบิน (Flight Booking System) พัฒนาขึ้นเพื่อเป็นส่วนหนึ่งของวิชา Full Stack Web Application Development
+ระบบนี้เชื่อมต่อระหว่าง Frontend และ Backend ผ่าน RESTful API โดยรองรับการทำงานของผู้ใช้งาน 2 ระดับ คือ User (สำหรับการจอง) และ Admin (สำหรับการจัดการระบบ)
 
-Currently, two official plugins are available:
+## Group Members
+1. รหัสนักศึกษา: 6810110485 ชื่อ-สกุล: พัสกร เพิ่มผล
+2. รหัสนักศึกษา: 6810110571 ชื่อ-สกุล: ชิษณุ แซ่เลี่ยง
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech Stack
 
-## React Compiler
+### Frontend
+* **Framework:** React (setup with Vite)
+* **Language:** TypeScript (.tsx)
+* **Features:** Strict Typing, Interface definition
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Backend
+* **Framework:** NestJS
+* **Database:** PostgreSQL
+* **Infrastructure:** Docker & Docker Compose
+* **Authentication:** JWT & Passport
 
-## Expanding the ESLint configuration
+## Features Overview
+* **Authentication:** ระบบ Register และ Login โดยมีการแยก Role (Admin/User)
+* **Booking Flow:** ผู้ใช้สามารถดูรายการเที่ยวบินและทำการจองได้ (Business Logic)
+* **Management:** Admin สามารถจัดการข้อมูลเที่ยวบินได้ (CRUD Operations)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
->>>>>>> origin/feature/frontend-init
+## Project Structure
+* `/frontend`: Source code สำหรับ React Application
+* `/backend`: Source code สำหรับ NestJS API และไฟล์ docker-compose.yml
