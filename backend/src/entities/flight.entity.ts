@@ -1,61 +1,112 @@
-// backend/src/entities/flight.entity.ts
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  OneToMany, 
-  ManyToMany, 
-  JoinTable, 
-  VersionColumn 
-} from 'typeorm';
-import { Booking } from './booking.entity';
-import { FlightAmenity } from './flight-amenity.entity'; // ✅ Import Entity ใหม่
+// backend/src/entities/flight.entity.ts = ไฟล์นี้คือ Entity ของ Flight (เที่ยวบิน) เป็น
+//ไฟล์ที่ใช้โดย TypeORM เพื่อบอกว่า
+//👉 “ตาราง flights ในฐานข้อมูล มีโครงสร้างยังไง และสัมพันธ์กับตารางอื่นอย่างไร”
 
+// ===============================
+// Import จาก TypeORM (ล่ามระหว่างผมกับ DB)
+// ===============================
+import { 
+  Entity,                 // ใช้กำหนดว่า class นี้เป็น Entity (ตารางใน DB) Entity = “ตัวแทนของตารางในฐานข้อมูล”
+  PrimaryGeneratedColumn, // Primary Key (Auto Increment) = เป็นตัวระบุแถวในตารางให้ไม่ซ้ำ และสร้างให้อัตโนมัติ
+  Column,                 // ใช้กำหนด column ในตาราง
+  OneToMany,              // ความสัมพันธ์แบบ 1 → หลาย
+  ManyToMany,             // ความสัมพันธ์แบบ หลาย → หลาย
+  JoinTable,              // ตารางกลาง (Join Table)
+  VersionColumn           // ใช้สำหรับ Optimistic Lock (ป้องกัน Race Condition)  VersionColumn     // ใช้สำหรับ Optimistic Lock (ป้องกัน Race Condition)
+} from 'typeorm';
+
+// Import Entity อื่น ๆ
+import { Booking } from './booking.entity';
+import { FlightAmenity } from './flight-amenity.entity';
+
+// ===============================
+// Flight Entity
+// ===============================
+
+// @Entity('flights')
+// หมายถึง class นี้แทนตารางชื่อ flights ในฐานข้อมูล
 @Entity('flights')
 export class Flight {
+
+  // ===============================
+  // Primary Key
+  // ===============================
+
+  // flight_id = Primary Key ของตาราง flights
+  // Auto Generate เพิ่มค่าอัตโนมัติ
   @PrimaryGeneratedColumn()
   flight_id: number;
 
+  // ===============================
+  // ข้อมูลพื้นฐานของเที่ยวบิน
+  // ===============================
+
+  // รหัสเที่ยวบิน เช่น TG101
   @Column()
   flight_code: string;
 
+  // ต้นทาง
   @Column()
   origin: string;
 
+  // ปลายทาง
   @Column()
   destination: string;
 
+  // วันที่และเวลาการเดินทาง
+  // type: 'timestamp' เพื่อเก็บวันที่ + เวลา
   @Column({ type: 'timestamp' })
   travel_date: Date;
 
+  // ราคาตั๋ว
   @Column()
   price: number;
 
+  // จำนวนที่นั่งที่ยังเหลือ
   @Column()
   available_seats: number;
 
+  // สถานะเที่ยวบิน (Active / Cancelled ฯลฯ)
+  // default = Active
   @Column({ default: 'Active' })
   status: string;
 
-  // ✅ เพิ่ม Version Column เพื่อป้องกัน Race Condition
+  // ===============================
+  // Version Column (สำคัญมาก)
+  // ===============================
+
+  // ใช้สำหรับ Optimistic Locking
+  // ทุกครั้งที่ข้อมูล flight ถูก update
+  // ค่า version จะเพิ่มอัตโนมัติ
+  // ช่วยป้องกัน Race Condition
   @VersionColumn()
   version: number;
 
-  // ✅ One-to-Many (เดิม - ไม่เปลี่ยน)
+  // ===============================
+  // Relations
+  // ===============================
+
+  // One-to-Many
+  // 1 เที่ยวบิน สามารถมีหลาย Booking
   @OneToMany(() => Booking, (booking) => booking.flight)
   bookings: Booking[];
 
-  // ✅ Many-to-Many (ใหม่ - เที่ยวบิน 1 เที่ยวมีได้หลาย Amenities)
+  // Many-to-Many
+  // 1 เที่ยวบิน มี Amenities ได้หลายอย่าง 
+  // และ 1 Amenity ก็ใช้กับหลายเที่ยวบินได้
+  // (Amenities หมายถึง เที่ยวบิน 1 เที่ยว อาจมีสิ่งอำนวยความสะดวกหลายอย่าง เช่น Wi-Fi, Meal, USB Charging)
   @ManyToMany(() => FlightAmenity, { eager: false })
+
+  // JoinTable = ตารางกลางเชื่อม Flight ↔ Amenity
   @JoinTable({
-    name: 'flight_amenity_mapping', // ชื่อตาราง Join Table
+    name: 'flight_amenity_mapping', // ชื่อตารางกลาง
     joinColumn: { 
-      name: 'flight_id', 
-      referencedColumnName: 'flight_id' 
+      name: 'flight_id',             // FK ฝั่ง Flight
+      referencedColumnName: 'flight_id'
     },
     inverseJoinColumn: { 
-      name: 'amenity_id', 
-      referencedColumnName: 'amenity_id' 
+      name: 'amenity_id',            // FK ฝั่ง Amenity
+      referencedColumnName: 'amenity_id'
     }
   })
   amenities: FlightAmenity[];
