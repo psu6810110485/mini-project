@@ -9,15 +9,15 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true }) // อีเมลต้องไม่ซ้ำกัน
   email: string;
 
   @Column()
   password: string;
 
   @Column({ default: 'USER' }) // สำหรับทำ Authorization แบ่ง ADMIN/USER
-  role: string;
+  role: string; // Set Default as 'USER'
 
-  @OneToMany(() => Booking, (booking) => booking.user)
+  @OneToMany(() => Booking, (booking) => booking.user) // 1 จองตั๋วได้หลายใบ
   bookings: Booking[];
 }

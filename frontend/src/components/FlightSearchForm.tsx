@@ -2,26 +2,29 @@ import { useState } from 'react'
 import type { FlightSearchParams } from '../types'
 
 type FlightSearchFormProps = {
-  initialValue?: FlightSearchParams
-  onSearch: (params: FlightSearchParams) => void
+  initialValue?: FlightSearchParams // ค่าเริ่มต้นของฟอร์มการค้นหา
+  onSearch: (params: FlightSearchParams) => void // onSearch ฟังก์ชัน callback เมื่อกดค้นหา ส่งการค้นหาไป app.tsx
 }
 
-const DEFAULT_SEARCH: FlightSearchParams = { origin: '', destination: '', travelDate: '' }
+const DEFAULT_SEARCH: FlightSearchParams = { origin: '', destination: '', travelDate: '' } // ค่าเริ่มต้นของการค้นหา
 
+// ฟอร์มการค้นหาเที่ยวบิน
 export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormProps) {
-  const [form, setForm] = useState<FlightSearchParams>(initialValue || DEFAULT_SEARCH)
+  const [form, setForm] = useState<FlightSearchParams>(initialValue || DEFAULT_SEARCH) // ใช้ useState เพื่อเก็บสถานะของฟอร์มการค้นหา initialValue หรือ ค่าเริ่มต้น
 
-  function updateField<K extends keyof FlightSearchParams>(key: K, value: FlightSearchParams[K]) {
-    const updatedForm = { ...form, [key]: value }
-    setForm(updatedForm)
+
+
+  function updateField<K extends keyof FlightSearchParams>(key: K, value: FlightSearchParams[K]) { //K extends keyof ตรวจสอบ key ว่าเป็น key ของ FlightSearchParams หรือไม่
+    const updatedForm = { ...form, [key]: value }// อัปเดตฟิลด์ในฟอร์มจากของเดิม
+    setForm(updatedForm) // อัปเดตสถานะฟอร์ม
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    onSearch({
-      origin: (form.origin ?? '').trim(),
-      destination: (form.destination ?? '').trim(),
-      travelDate: form.travelDate ?? '',
+    e.preventDefault() // ป้องกันการรีเฟรชหน้าเมื่อส่งฟอร์ม
+    onSearch({ 
+      origin: (form.origin ?? '').trim(), // trim() เพื่อลบช่องว่างด้านหน้าและหลัง ใส่ ?? เอาข้อความว่าง '' เผื่อค่าเป็น undefined
+      destination: (form.destination ?? '').trim(), 
+      travelDate: form.travelDate ?? '', 
     })
   }
 
@@ -30,7 +33,6 @@ export function FlightSearchForm({ initialValue, onSearch }: FlightSearchFormPro
     setForm(DEFAULT_SEARCH); // รีเซ็ตฟอร์มเป็นค่าว่าง
     onSearch(DEFAULT_SEARCH); // สั่งค้นหาใหม่แบบไม่กรอง (แสดงทั้งหมด)
   }
-
   return (
     <form onSubmit={handleSubmit}>
       {/* ✅ แก้ไข: แยก Grid เป็น 2 ส่วน - บรรทัดแรก 3 ช่อง, บรรทัดที่ 2 ปุ่มค้นหา */}

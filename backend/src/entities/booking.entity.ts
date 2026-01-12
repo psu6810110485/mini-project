@@ -17,17 +17,17 @@ export class Booking {
   @Column()
   seat_count: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2 })  // ราคาแบบทศนิยม 2 ตำแหน่ง เก็บตัวเลขได้ทั้งหมด 10 หลัก
   total_price: number;
 
   @Column({ default: 'Confirmed' })
   status: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  booking_time: Date;
+  booking_time: Date; //ตัวยึดเวลากลางของ server ให้เป็นมาตรฐานเดียวกัน
 
   // ✅ Relation กับ Flight (เพิ่ม onDelete: 'CASCADE' เพื่อให้ลบ Flight ได้โดยไม่ติด FK)
-  @ManyToOne(() => Flight, { eager: false, onDelete: 'CASCADE' }) 
+  @ManyToOne(() => Flight, { eager: false, onDelete: 'CASCADE' }) //Cascade เป็นการลบแบบล้างบาง
   @JoinColumn({ name: 'flight_id' })
   flight?: Flight;
 

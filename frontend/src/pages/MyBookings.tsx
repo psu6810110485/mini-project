@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import type { Booking, ID } from '../types'
 
-interface MyBookingsProps {
-  userId: ID
-  onClose: () => void
+interface MyBookingsProps { // Props ของ Component สิ่งที่ต้องการ
+  userId: ID 
+  onClose: () => void // ฟังก์ชันปิด Modal
 }
 
 interface BookingWithFlight extends Booking {

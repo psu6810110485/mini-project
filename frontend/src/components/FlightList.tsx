@@ -1,17 +1,17 @@
 import type { Flight, ID } from '../types'
 
 type FlightListProps = {
-  flights: Flight[]
-  selectedFlightId?: ID
-  onSelect: (flight: Flight) => void
+  flights: Flight[] // รายการเที่ยวบินที่จะแสดง [] หมายถึงมาเป็นกอง เที่ยวบินต่างๆ
+  selectedFlightId?: ID // ไอดีของเที่ยวบินที่ถูกเลือก (ถ้ามี) เอาไว้ทำที่ไฮไลท์เวลาเอาเมาส์ไปคลิก กรอบเทาๆ
+  onSelect: (flight: Flight) => void // ฟังก์ชันที่จะเรียกเมื่อมีการเลือกเที่ยวบิน ส่งข้อมูลไปให้ App.tsx แล้วต่อด้วย bookingpanel.tsx คำนวณ
 }
 
 function formatMoney(value: number | string): string {
   return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(Number(value))
-}
+} // ฟังก์ชันแปลงตัวเลขเป็นรูปแบบเงินไทย แปลงเป็นตัวเลขก่อนเผื่อรับ string มา
 
 export function FlightList({ flights, selectedFlightId, onSelect }: FlightListProps) {
-  if (flights.length === 0) {
+  if (flights.length === 0) { // ถ้าไม่มีเที่ยวบินเลย
     return (
       <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
         <div style={{ fontSize: '3rem', opacity: 0.3 }}>✈️</div>
@@ -20,18 +20,19 @@ export function FlightList({ flights, selectedFlightId, onSelect }: FlightListPr
     )
   }
 
-  return (
+  //โรงงานผลิตการ์ด (The Card Factory)
+  return ( // ถ้ามีเที่ยวบิน
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      {flights.map((f) => {
-        const isSelected = selectedFlightId === f.flight_id 
-        const isAvailable = f.available_seats > 0 
+      {flights.map((f) => { // วนลูปสร้างการ์ดแต่ละใบ
+        const isSelected = selectedFlightId === f.flight_id // ตรวจสอบว่าเที่ยวบินนี้ถูกเลือกหรือไม่ ใช่ใบที่จิ้มมั้ย
+        const isAvailable = f.available_seats > 0 // ตรวจสอบว่ามีที่นั่งว่างหรือไม่
 
         return (
           <div 
-            key={f.flight_id} 
-            className={`flight-card ${isSelected ? 'selected' : ''}`}
-            onClick={() => isAvailable && onSelect(f)}
-            style={{ cursor: isAvailable ? 'pointer' : 'not-allowed', opacity: isAvailable ? 1 : 0.6 }}
+            key={f.flight_id}  // ใส่ key เพื่อให้ React จัดการลิสต์ได้ถูกต้อง บาร์โค้ดประจำตัว .map ที่ได้ key ห้ามซ้ำกัน
+            className={`flight-card ${isSelected ? 'selected' : ''}`} // ใส่คลาส selected ถ้าเป็นเที่ยวบินที่ถูกเลือก = flight-card selected   
+            onClick={() => isAvailable && onSelect(f)} // ถ้ามีที่นั่งว่างถึงจะเรียก onSelect(f) เพื่อส่งข้อมูลเที่ยวบินที่เลือกไปข้างบน ถ้าไม่ว่างจะไม่ทำอะไร
+            style={{ cursor: isAvailable ? 'pointer' : 'not-allowed', opacity: isAvailable ? 1 : 0.6 }} //ตกแต่งเปลี่ยนเคอเซอถ้าไม่ว่าง
           >
             {/* โซนซ้าย: ข้อมูลการบิน */}
             <div className="flight-info-left">

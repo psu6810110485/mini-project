@@ -9,5 +9,5 @@ export class Amenity {
   name: string; // เช่น "Free WiFi", "Meal Included"
 
   @Column({ nullable: true })
-  icon: string; // เก็บชื่อ icon หรือ url
+  icon: string; // เก็บชื่อ icon หรือ url.
 }

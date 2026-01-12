@@ -5,15 +5,15 @@ export type ID = number
 // ---------- API Helpers ----------
 export type IsoDateTimeString = string
 
-export type ApiResponse<TData> = {
+export type ApiResponse<TData> = { // เป็นกล่องเปล่าที่บรรจุข้อมูล TData
   data: TData
-  message?: string
+  message?: string 
 }
 
-export type ApiError = {
-  message: string
-  code?: string
-  details?: unknown
+export type ApiError = { // ข้อมูลข้อผิดพลาดจาก API
+  message: string // ข้อความอธิบายข้อผิดพลาด User อ่านรู้เรื่อง
+  code?: string // รหัสข้อผิดพลาด (ถ้ามี)
+  details?: unknown // ข้อมูลเพิ่มเติมเกี่ยวกับข้อผิดพลาด (ถ้ามี)
 }
 
 // ---------- Auth & Roles ----------
@@ -21,6 +21,8 @@ export type UserRole = 'ADMIN' | 'USER'
 
 export type AuthToken = string
 
+
+//นี่คือโครงสร้างข้อมูล (Structure) ที่ Backend จะส่งกลับมาเมื่อผู้ใช้ล็อกอินผ่านระบบสำเร็จ
 export interface AuthResponse {
   token: AuthToken
   user: User

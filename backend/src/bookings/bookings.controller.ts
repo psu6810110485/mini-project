@@ -10,15 +10,15 @@ export class BookingsController {
 
   // ✅ Endpoint: สร้างการจองใหม่
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard) // ใช้ JWT Auth Guard เพื่อป้องกันการเข้าถึง
   @ApiBearerAuth()
-  async create(
+  async create( 
     @Req() req: any, 
     @Body() body: { flightId: number, seatCount: number, totalPrice: number } 
   ) {
     console.log('📝 Creating booking for user:', req.user.userId);
     
-    return await this.bookingsService.create(
+    return await this.bookingsService.create(  // ใช้ req.user.userId แทนการรับ userId จาก body
       req.user.userId, 
       body.flightId, 
       body.seatCount, 
@@ -27,8 +27,8 @@ export class BookingsController {
   }
 
   // ✅ Endpoint เดิม: ดึงประวัติการจองของ User (เก็บไว้เผื่อใช้งาน)
-  @Get('my-bookings/:userId')
-  @UseGuards(JwtAuthGuard)
+  @Get('my-bookings/:userId') //
+  @UseGuards(JwtAuthGuard) // ใช้ JWT Auth Guard เพื่อป้องกันการเข้าถึง
   @ApiBearerAuth()
   async getMyBookings(@Param('userId') userId: string, @Req() req: any) {
     console.log('🔍 Fetching bookings for userId:', userId);

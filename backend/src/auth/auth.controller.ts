@@ -42,26 +42,26 @@ export class LoginDto {
   password: string;
 }
 
-@ApiTags('Auth')
-@Controller('auth')
+@ApiTags('Auth')         // 1. กำหนดหมวดหมู่ใน Swagger เป็น Auth
+@Controller('auth')      // 2. กำหนด route หลักเป็น /auth
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {} // ฉีด AuthService เข้ามาใช้ เป็นผู้ช่วยจัดการเรื่อง logic ต่างๆ
 
   @Post('register')
   @ApiBody({ type: RegisterDto })
   async register(@Body() userData: RegisterDto) {
-    // ถ้า role ไม่ถูกส่งมา อาจจะกำหนดค่า Default ที่ Service หรือตรงนี้ก็ได้
-    return this.authService.register(userData);
+    // ถ้า role ไม่ถูกส่งมา อาจจะกำหนดค่า Default ที่ Service หรือตรงนี้ก็ได้ ขอบัตรประชาชนและข้อมูลตามแบบฟอร์ม RegisterDto
+    return this.authService.register(userData); // เรียกใช้ฟังก์ชัน register ของ AuthService
   }
 
   @Post('login')
   @ApiBody({ type: LoginDto })
-  async login(@Body() loginData: LoginDto) {
-    return this.authService.login(loginData);
+  async login(@Body() loginData: LoginDto) { //รับฟอร์ม LoginDto (อีเมล + รหัสผ่าน)
+    return this.authService.login(loginData); //ส่งให้ผู้ช่วย (authService) ไปเช็คว่ารหัสถูกไหม? ถ้าถูก ช่วยออก "บัตรผ่าน (Token)" ให้ลูกค้าคนนี้หน่อย
   }
 
   // ✅ 3. Endpoint สำหรับทดสอบ Token (งานเดิมของคุณ)
-  @UseGuards(AuthGuard('jwt')) // ต้องมี Token ถึงจะเข้าได้
+  @UseGuards(AuthGuard('jwt')) // ต้องมี Token ถึงจะเข้าได้ ยามเฝ้าประตู
   @ApiBearerAuth() // โชว์ปุ่มใส่ Token ใน Swagger
   @Get('profile')
   getProfile(@Request() req) {

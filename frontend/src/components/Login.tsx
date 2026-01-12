@@ -4,38 +4,39 @@ import { useNavigate } from 'react-router-dom';
 import type { LoginRequest } from '../types';
 
 interface LoginProps {
-  onLoginSuccess: (user: any) => void;
+  onLoginSuccess: (user: any) => void; 
 }
 
-export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => { //type LoginProps
   // ==========================================
   // 🟢 PART 1: LOGIC & STATE (ของเดิม ห้ามลบ)
   // ==========================================
-  const [isLoginMode, setIsLoginMode] = useState(true);
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [name, setName] = useState<string>('');
+  const [isLoginMode, setIsLoginMode] = useState(true);//isLoginMode True แสดงแค่ช่อง Email/Password
+  const [email, setEmail] = useState<string>('');       // ช่องว่างให้เขียน
+  const [password, setPassword] = useState<string>(''); // ช่องว่างให้เขียน
+  const [name, setName] = useState<string>('');         // ช่องว่างให้เขียน (ใช้ตอนสมัครสมาชิก)
   
   // UI States
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // สลับแสดงรหัสผ่าน set เริ่มเป็น false คือ ไม่แสดง
   const [rememberMe, setRememberMe] = useState(false);
   
   // State สำหรับ Popup เดิม
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // แสดง Modal Login สำเร็จ
+  const [showErrorModal, setShowErrorModal] = useState(false);  // แสดง Modal แจ้งข้อผิดพลาด แจ้งเข้าสู่ระบบไม่สำเร็จ
   const [errorMessage, setErrorMessage] = useState('');
   const [userNameForWelcome, setUserNameForWelcome] = useState('');
 
   // 🔥 [NEW] เพิ่ม State สำหรับ Modal สมัครสมาชิกสำเร็จ (แทน alert)
-  const [showRegisterSuccessModal, setShowRegisterSuccessModal] = useState(false);
+  const [showRegisterSuccessModal, setShowRegisterSuccessModal] = useState(false); // แสดง Modal สมัครสมาชิกสำเร็จ false คือ เริ่มต้นไม่แสดง
 
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // สำหรับเปลี่ยนหน้าอัตโนมัติหลัง Login
 
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('remembered_email');
+  // โหลด email ที่จดจำไว้ตอนเริ่มต้น 
+  useEffect(() => {                 //เมื่อเปิดเว็บ
+    const savedEmail = localStorage.getItem('remembered_email'); // ดึง email จาก localStorage
     if (savedEmail) {
-      setEmail(savedEmail);
-      setRememberMe(true);
+      setEmail(savedEmail);       // โหลด email ที่จดจำไว้ตอนเริ่มต้น
+      setRememberMe(true);   
     }
   }, []);
 
@@ -46,41 +47,43 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setPassword('');      // เคลียร์รหัสผ่าน
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {//เมื่อกดปุ่ม submit
+    e.preventDefault();//ป้องกันการรีเฟรชหน้า
     try {
       if (isLoginMode) {
         // --- Login Logic (ของเดิม) ---
-        const loginData: LoginRequest = { email, password };
-        const response = await api.post<any>('/auth/login', loginData);
+        const loginData: LoginRequest = { email, password };            //สร้าง object loginData
+        const response = await api.post<any>('/auth/login', loginData); //ส่งข้อมูลไปที่ /auth/login แล้วรอรับ response กลับมา
         
-        const token = response.data.access_token;
-        const userData = response.data.user;
+        const token = response.data.access_token;               //ดึง access_token จาก response
+        const userData = response.data.user;                    //ดึง user data จาก response
 
-        if (token && userData) {
-          localStorage.setItem('token', token);
-          localStorage.setItem('user', JSON.stringify(userData));
+        if (token && userData) {                 //ถ้ามี token และ user data                        
+          localStorage.setItem('token', token);          //เก็บ token ใน localStorage
+          localStorage.setItem('user', JSON.stringify(userData));    //เก็บ user data ใน localStorage (แปลงเป็น string ก่อน)
+
+          // จัดการ Remember Me 
           
           if (rememberMe) {
-            localStorage.setItem('remembered_email', email);
+            localStorage.setItem('remembered_email', email); // จดจำ email
           } else {
-            localStorage.removeItem('remembered_email');
+            localStorage.removeItem('remembered_email');     // ลบ email ที่จดจำไว้
           }
 
-          setUserNameForWelcome(userData.name || 'User');
-          setShowSuccessModal(true);
+          setUserNameForWelcome(userData.name || 'User');   // ตั้งชื่อผู้ใช้สำหรับต้อนรับ
+          setShowSuccessModal(true);                        // แสดง Modal Login สำเร็จ
 
-          setTimeout(() => {
-            onLoginSuccess(userData);
+          setTimeout(() => {                               //หน่วงเวลา 1.5 วินาที
+            onLoginSuccess(userData);                // เรียก callback แจ้งว่า Login สำเร็จ
             navigate('/flights'); 
           }, 1500);
         } else {
-          throw new Error('ข้อมูลจาก Server ไม่สมบูรณ์');
+          throw new Error('ข้อมูลจาก Server ไม่สมบูรณ์');     //ถ้าไม่มี token หรือ user data ให้แสดง error
         }
 
       } else {
         // --- Register Logic (อัปเกรดใหม่) ---
-        const registerData = { name, email, password, role: 'USER' };
+        const registerData = { name, email, password, role: 'USER' }; // สร้าง object registerData role กำหนดเป็น 'USER'
         await api.post('/auth/register', registerData);
         
         // ❌ ของเก่า: alert('✅ สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
@@ -94,15 +97,15 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     } catch (error: any) {
       console.error('Action failed', error);
       
-      const msg = error.response?.data?.message;
+      const msg = error.response?.data?.message; // ? คือ optional chaining กัน error undefined
       let displayMsg = 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
 
       if (error.response?.status === 401) {
         displayMsg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
       } else if (Array.isArray(msg)) {
-        displayMsg = msg.join(', ');
-      } else if (typeof msg === 'string') {
-        displayMsg = msg;
+        displayMsg = msg.join(', '); // รวมข้อความถ้าเป็น array
+      } else if (typeof msg === 'string') { 
+        displayMsg = msg; // เอาข้อความมาโชว์เลยถ้าเป็น string
       }
 
       setErrorMessage(displayMsg);
@@ -624,4 +627,4 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       `}</style>
     </>
   );
-};
+};    

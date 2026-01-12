@@ -2,34 +2,37 @@ import { useState, useEffect } from 'react'
 import type { Booking, Flight, ID } from '../types'
 import api from '../api/axios'
 
-type BookingPanelProps = {
+type BookingPanelProps = {  // ข้อมูล Props ที่รับเข้ามา ID, Flightรับเข้ามาหมดเที่ยวไหน เวลา จำนวนที่นั่ง, onBooked 
   userId: ID
   flight: Flight
   onBooked: (booking: Booking) => void
 }
 
-function computeTotalPrice(price: number | string, seatCount: number): number {
+function computeTotalPrice(price: number | string, seatCount: number): number { // คำนวณราคารวม กำหนดให้ price เป็น number 
   return Number(price) * Number(seatCount)
 }
 
-function nowIso(): string {
+function nowIso(): string { // ฟังก์ชันช่วยสำหรับดึงเวลาปัจจุบันในรูปแบบ ISO เพราะให้เป็นสากล
   return new Date().toISOString()
 }
 
-export default function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) {
+export default function BookingPanel({ userId, flight, onBooked }: BookingPanelProps) { // รับ Props ที่จำเป็น  userId, flight, onBooked
   // =========================================================================
   // --- PART 1: LOGIC & STATE (ส่วนนี้คือ "งานเก่า" ห้ามลบ ห้ามแก้ Logic) ---
   // =========================================================================
-  const [seatCount, setSeatCount] = useState<number>(1)
-  const [isBooked, setIsBooked] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string>('')
-  const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [seatCount, setSeatCount] = useState<number>(1) // จำนวนที่นั่งเริ่มต้น 1 ที่นั่ง
+  const [isBooked, setIsBooked] = useState(false)  //จองเสร็จหรือยัง?
+  const [isLoading, setIsLoading] = useState(false)  //สถานะกำลังโหลด
+  const [errorMessage, setErrorMessage] = useState<string>('') // ข้อความแสดงข้อผิดพลาด Ex ที่นั่งไม่พอ
+  const [latestBooking, setLatestBooking] = useState<Booking | null>(null)  //ใบเสร็จจองล่าสุด
+  const [showSuccessModal, setShowSuccessModal] = useState(false) //สถานะโชว์ modal จองสำเร็จ
+
 
   // 🔥 [NEW] State สำหรับควบคุม Modal ยืนยันก่อนจอง
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false) //สถานะโชว์ modal ยืนยันก่อนจอง
 
+
+  // รีเซ็ตสถานะเมื่อเปลี่ยนเที่ยวบิน
   useEffect(() => {
     setSeatCount(1);
     setIsBooked(false)
@@ -37,14 +40,14 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
     setLatestBooking(null)
     setShowSuccessModal(false)
     setShowConfirmModal(false) // Reset confirm modal เมื่อเปลี่ยน Flight
-  }, [flight]);
+  }, [flight]); //เมื่อ flight เปลี่ยนจะรีเซ็ตสถานะต่างๆตามในปีกกา
 
-  const maxSeats = Math.max(0, Number(flight.available_seats))
-  const totalPrice = computeTotalPrice(flight.price, seatCount)
+  const maxSeats = Math.max(0, Number(flight.available_seats)) // จำนวนที่นั่งว่างสูงสุด
+  const totalPrice = computeTotalPrice(flight.price, seatCount) // ราคารวม
 
   function handleSeatChange(value: number) {
-    const next = Number.isFinite(value) ? value : 1
-    setSeatCount(Math.min(Math.max(next, 1), Math.max(maxSeats, 1)))
+    const next = Number.isFinite(value) ? value : 1 // ตรวจสอบค่า ถ้าไม่ใช่ตัวเลขให้เป็น 1
+    setSeatCount(Math.min(Math.max(next, 1), Math.max(maxSeats, 1))) //ห้ามต่ำกว่า 1 และ ห้ามเกินจำนวนที่นั่งเหลือ
   }
 
   // 🔥 [MODIFIED] ฟังก์ชันที่ 1: เช็คเงื่อนไขเบื้องต้น แล้วเปิด Modal ยืนยัน (แทนที่จะจองเลย)
@@ -55,6 +58,7 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
     }
     // เคลียร์ Error เดิมก่อน
     setErrorMessage('')
+
     // เปิดหน้าต่างยืนยัน (Confirmation Modal)
     setShowConfirmModal(true) 
   }
@@ -65,16 +69,16 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
     setShowConfirmModal(false)
     
     // เริ่ม Loading
-    setIsLoading(true)
+    setIsLoading(true) // สถานะกำลังโหลด กันไม่ให้ user กดยืนยันซ้ำ
     setErrorMessage('')
 
     try {
-      console.log('📝 Creating booking for user:', userId)
+      console.log('📝 Creating booking for user:', userId)    
       
-      const response = await api.post('/bookings', {
-        flightId: flight.flight_id,
-        seatCount: Math.min(Math.max(seatCount, 1), Math.max(maxSeats, 1)),
-        totalPrice: totalPrice
+      const response = await api.post('/bookings', { // เรียก API สร้างการจอง
+        flightId: flight.flight_id, // ID เที่ยวบิน
+        seatCount: Math.min(Math.max(seatCount, 1), Math.max(maxSeats, 1)), // ตรวจสอบจำนวนที่นั่งอีกครั้ง
+        totalPrice: totalPrice 
       })
 
       console.log('✅ Booking created successfully:', response.data)
@@ -89,17 +93,19 @@ export default function BookingPanel({ userId, flight, onBooked }: BookingPanelP
         booking_time: response.data.booking_time || nowIso(),
       }
 
-      onBooked(booking)
-      setLatestBooking(booking)
-      setIsBooked(true)
-      setShowSuccessModal(true)
+      onBooked(booking)  // แจ้งให้พ่อแม่ทราบว่าจองสำเร็จ
+      setLatestBooking(booking) // เก็บข้อมูลการจองล่าสุด
+      setIsBooked(true) // อัปเดตสถานะจองเสร็จ
+      setShowSuccessModal(true) // แสดง Modal จองสำเร็จ
 
+
+      // กรณีการจองerror จะถูกจับใน catch ด้านล่าง
     } catch (error: any) {
       console.error('❌ Booking failed:', error)
       const errorMsg = error.response?.data?.message || 'เกิดข้อผิดพลาดในการจอง'
-      setErrorMessage(errorMsg)
-    } finally {
-      setIsLoading(false)
+      setErrorMessage(errorMsg) // แสดงข้อความ error ให้ user เห็น
+    } finally { // ไม่ว่าจะสำเร็จหรือล้มเหลวยังคงทำงานเสมอ
+      setIsLoading(false) // จบการโหลด
     }
   }
 

@@ -15,11 +15,11 @@ import MyBookings from './pages/MyBookings'
 import api from './api/axios' 
 import type { Booking, Flight, FlightSearchParams, User, ID } from './types'
 
-// --- Helper Functions ---
+// --- Helper Functions --- แปลงข้อมูลจาก API ให้เป็นรูปแบบที่ใช้งานในระบบ
 
-function mapFlightFromApi(raw: any): Flight {
+function mapFlightFromApi(raw: any): Flight { //แปลงข้อมูลเที่ยวบินจาก API ให้เป็นรูปแบบ Flight
   return {
-    flight_id: raw.flight_id ?? raw.flightId,
+    flight_id: raw.flight_id ?? raw.flightId, //?? แปลว่า "ถ้าข้างหน้าไม่มี ให้เอาข้างหลัง"
     flight_code: raw.flight_code ?? raw.flightCode,
     origin: raw.origin,
     destination: raw.destination,
@@ -30,51 +30,56 @@ function mapFlightFromApi(raw: any): Flight {
   }
 }
 
-function toLocalYyyyMmDd(value: string | Date | null | undefined): string {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
+//แปลงวันที่เป็นรูปแบบ YYYY-MM-DD
+function toLocalYyyyMmDd(value: string | Date | null | undefined): string { // รับค่าเป็น string หรือ Date หรือ null/undefined
+  if (!value) return '' 
+  const date = value instanceof Date ? value : new Date(value) //ถ้าสิ่งที่ส่งมาเป็นข้อความ (String) ให้เสกให้เป็นวัตถุวันที่ (Date Object)
+  if (Number.isNaN(date.getTime())) return '' //ถ้าแปลงแล้วไม่สำเร็จ ให้คืนค่าว่าง
   const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0') //เดือนใน JavaScript เริ่มต้นที่ 0 (มกราคม) ถึง 11 (ธันวาคม) 2,0 คือ เติม 0 ด้านหน้าให้ครบ 2 หลัก
+  const day = String(date.getDate()).padStart(2, '0') //วันที่ของเดือน (1-31) เติม 0 ด้านหน้าให้ครบ 2 หลัก
   return `${year}-${month}-${day}`
 }
 
+//State (สเตท) คือสิ่งที่แอปต้อง "จำ" เอาไว้ตลอดเวลา เพราะถ้าค่าพวกนี้เปลี่ยน หน้าจอต้องเปลี่ยนตามทันทีครับ
 function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null); 
   const [flights, setFlights] = useState<Flight[]>([]); 
-  const [search, setSearch] = useState<FlightSearchParams>({
+  const [search, setSearch] = useState<FlightSearchParams>({  //ลูกค้าพิมพ์อะไรในช่องค้นหา?" (เช่น ต้นทาง: กรุงเทพ, ปลายทาง: ภูเก็ต)
     origin: '',
     destination: '',
     travelDate: '',
   })
-  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
-  const [latestBooking, setLatestBooking] = useState<Booking | null>(null)
-  
-  // ✅ State สำหรับเปิด/ปิด Modal ประวัติการจอง
-  const [showMyBookings, setShowMyBookings] = useState(false) 
+  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null) //พอลูกค้าคลิกที่ตั๋วใบหนึ่ง ข้อมูลตั๋วนั้นจะมาอยู่ที่นี่ แล้วแผงจองด้านขวา (BookingPanel) ก็จะเด้งขึ้นมา
+  const [latestBooking, setLatestBooking] = useState<Booking | null>(null) //เก็บข้อมูลการจองล่าสุดที่ลูกค้าทำสำเร็จไว้ เพื่อแสดงข้อความยืนยันการจอง
+ 
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser && savedUser !== "undefined") {
+
+  // ✅ State สำหรับเปิด/ปิด Modal ประวัติการจอง
+  const [showMyBookings, setShowMyBookings] = useState(false)  //ตอนนี้กำลังเปิดหน้าต่าง 'ประวัติการจอง' อยู่หรือเปล่า?" false=ปิด, true=เปิด
+
+  useEffect(() => {   //โหลดข้อมูลผู้ใช้ที่เก็บไว้ใน localStorage ตอนแอปเริ่มทำงาน ไม่ต้องกรอกข้อมูลใหม่ทุกครั้ง
+    const savedUser = localStorage.getItem('user'); //โหลดข้อมูลผู้ใช้ที่เก็บไว้ใน localStorage
+    if (savedUser && savedUser !== "undefined") {  // ถ้ามีข้อมูลผู้ใช้ และไม่ใช่ "undefined"
       try {
-        const parsedUser = JSON.parse(savedUser);
-        // ✅ Debug: แสดงข้อมูล user ที่โหลดจาก localStorage
-        console.log('📦 Loaded user from localStorage:', parsedUser);
+        const parsedUser = JSON.parse(savedUser);//แปลงข้อมูลจากข้อความ (String) เป็นวัตถุ (Object)
+        // ✅ Debug: แสดงข้อมูล user ที่โหลดจาก localStorage 
+        console.log('📦 Loaded user from localStorage:', parsedUser); //parsedUser คือพร้อมใช้งาน
         console.log('🔑 userId:', parsedUser.userId);
         console.log('🔑 user_id:', parsedUser.user_id);
         setCurrentUser(parsedUser);
       } catch (error) {
         console.error("Error parsing user from localStorage", error);
-        localStorage.removeItem('user');
+        localStorage.removeItem('user'); //ถ้าแปลงข้อมูลไม่สำเร็จ ให้ลบข้อมูลผู้ใช้เก่าออก
       }
     }
-  }, []);
+  }, []); //[] คือ รันครั้งเดียวตอนโหลดแอป เพื่อโหลดข้อมูลผู้ใช้ที่เก็บไว้ใน localStorage
 
-  const fetchFlights = useCallback(async () => {
+
+  const fetchFlights = useCallback(async () => { //ดึงข้อมูลเที่ยวบินจาก API //useCallback เพื่อไม่ให้ฟังก์ชันเปลี่ยนถ้า dependencies ไม่เปลี่ยน
     try {
-      const response = await api.get<any[]>('/flights')
-      const mappedFlights: Flight[] = response.data.map(mapFlightFromApi)
+      const response = await api.get<any[]>('/flights') 
+      const mappedFlights: Flight[] = response.data.map(mapFlightFromApi) //แปลงข้อมูลแต่ละรายการให้เป็นรูปแบบ Flight
       setFlights(mappedFlights)
       setSearch({ origin: '', destination: '', travelDate: '' })
     } catch (error) {
@@ -83,17 +88,17 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser) { //ถ้ามีผู้ใช้ล็อกอินอยู่ ให้ดึงข้อมูลเที่ยวบิน
       fetchFlights()
     }
   }, [currentUser, fetchFlights])
 
-  const handleAddFlight = async (newFlight: any) => { 
+  const handleAddFlight = async (newFlight: any) => {  //เพิ่มเที่ยวบินใหม่ (สำหรับ Admin)!!!
     try {
       console.log("🛠️ รับค่าจากฟอร์ม:", newFlight);
 
-      const payload = {
-        flightCode: newFlight.flightCode ?? newFlight.flight_code, 
+      const payload = { //เตรียมข้อมูลที่จะส่งไปยัง Backend
+        flightCode: newFlight.flightCode ?? newFlight.flight_code, //รองรับทั้ง camelCase และ snake_case
         origin: newFlight.origin,
         destination: newFlight.destination,
         travelDate: newFlight.travelDate ?? newFlight.travel_date, 
@@ -105,12 +110,14 @@ function App() {
 
       const response = await api.post<any>('/flights', payload)
       
-      const created = mapFlightFromApi(response.data)
-      setFlights((prev) => [created, ...prev.filter((f) => f.flight_id !== created.flight_id)])
-      
+      const created = mapFlightFromApi(response.data) //แปลงข้อมูลที่ได้จาก API ให้เป็นรูปแบบ Flight
+      setFlights((prev) => [created, ...prev.filter((f) => f.flight_id !== created.flight_id)]) //เพิ่มเที่ยวบินใหม่ไว้ด้านบนสุดของรายการ
+      //setFlights( คือไม่ต้องคอยกด refresh เอง ให้มันอัปเดตอัตโนมัติ
+
+
       // ✅ [UPDATE] ไม่ต้อง Alert ตรงนี้แล้ว เพราะใน AdminFlightManager มี Modal Success แล้ว
       // หรือถ้าจะให้ชัวร์ ใช้ Swal แจ้งเตือนเล็กๆ มุมขวาก็ได้
-      const Toast = Swal.mixin({
+      const Toast = Swal.mixin({ 
         toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
         didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
       });
@@ -120,9 +127,9 @@ function App() {
       console.error('❌ Failed to create flight:', error);
       const msg = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
       
-      // ✅ [PREMIUM UI] เปลี่ยนจาก alert เป็น Swal Error
+      // ✅ [PREMIUM UI] เปลี่ยนจาก alert เป็น Swal Error 
       Swal.fire({
-        icon: 'error',
+        icon: 'error', //ไอคอนรูปกากบาทสีแดง
         title: 'เพิ่มเที่ยวบินไม่สำเร็จ',
         text: Array.isArray(msg) ? msg.join(', ') : msg,
         confirmButtonColor: '#d33'
@@ -142,19 +149,19 @@ function App() {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
       confirmButtonText: 'ลบเที่ยวบิน',
-      cancelButtonText: 'ยกเลิก',
+      cancelButtonText: 'ยกเลิก', 
       background: '#fff',
       color: '#000'
     });
 
-    if (result.isConfirmed) {
+    if (result.isConfirmed) { //ถ้าผู้ใช้กดยืนยันการลบ สั่งลบที่หลังบ้าน
       try {
         // 2. เรียก API ลบ
         console.log(`🗑️ Deleting flight ID: ${id}`);
-        await api.delete(`/flights/${id}`);
+        await api.delete(`/flights/${id}`); 
         
         // 3. อัปเดต State (ลบออกจากหน้าจอ)
-        setFlights((prev) => prev.filter((f) => f.flight_id !== id));
+        setFlights((prev) => prev.filter((f) => f.flight_id !== id)); //ลบเที่ยวบินออกจาก State ทันที ไม่ต้องรีเฟรช
 
         // 4. แจ้งเตือนสำเร็จ
         Swal.fire(
@@ -164,7 +171,7 @@ function App() {
         );
 
       } catch (error: any) {
-        console.error('Failed to delete flight', error);
+        console.error('Failed to delete flight', error); //กรณีโดนตัดหน้าลบ หาข้อมูลไม่เจอ
         
         // 5. จัดการ Error (กรณี 404 หรืออื่นๆ)
         if (error.response && error.response.status === 404) {
@@ -196,7 +203,7 @@ function App() {
       if (result.isConfirmed) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        setCurrentUser(null);
+        setCurrentUser(null); //ล้างข้อมูลผู้ใช้ในสเตท หน้าจอเด้งกลับไปหน้า Login
         setSelectedFlight(null);
         setLatestBooking(null);
         
@@ -208,19 +215,22 @@ function App() {
     });
   };
 
-  const filteredFlights = useMemo(() => {
-    const origin = (search.origin ?? '').trim().toLowerCase()
-    const destination = (search.destination ?? '').trim().toLowerCase()
+  // ส่วนการค้นหาและกรองเที่ยวบิน
+  const filteredFlights = useMemo(() => { //useMemoจำผลลัพธ์การกรองเที่ยวบิน เพื่อไม่ให้คำนวณซ้ำถ้า search หรือ flights ไม่เปลี่ยน
+    const origin = (search.origin ?? '').trim().toLowerCase()//trim() คือ ตัดช่องว่างข้างหน้า/ข้างหลังออก
+    const destination = (search.destination ?? '').trim().toLowerCase()//แปลงเป็นตัวพิมพ์เล็กทั้งหมด เพื่อให้การค้นหาไม่สนใจตัวพิมพ์ใหญ่/เล็ก
     const travelDate = search.travelDate ?? ''
 
     return flights
       .filter((f) => {
-        const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin)
-        const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination)
-        const flightDate = toLocalYyyyMmDd(f.travel_date)
+        const originOk = origin.length === 0 || f.origin.toLowerCase().includes(origin) //ถ้าช่องค้นหาว่าง หรือ ต้นทางตรงกับที่ค้นหา
+        const destOk = destination.length === 0 || f.destination.toLowerCase().includes(destination) //ถ้าช่องค้นหาว่าง หรือ ปลายทางตรงกับที่ค้นหา
+        const flightDate = toLocalYyyyMmDd(f.travel_date) //แปลงวันที่เที่ยวบินเป็นรูปแบบ YYYY-MM-DD
         const dateOk = travelDate.length === 0 || flightDate === travelDate;
-        return originOk && destOk && dateOk
+        return originOk && destOk && dateOk //ต้องผ่านทั้ง 3 เงื่อนไขจึงจะเอาไว้แสดง && (AND operator
       })
+
+
       // ✅ [NEW] เรียงลำดับตามเวลาออกเดินทาง (น้อย -> มาก)
       // เที่ยวบินที่ออกเดินทางก่อน จะแสดงขึ้นมาเป็นอันดับแรก
       .sort((a, b) => {
@@ -229,13 +239,16 @@ function App() {
         return dateA - dateB; 
       });
 
-  }, [search.destination, search.origin, search.travelDate, flights])
+
+  }, [search.destination, search.origin, search.travelDate, flights]) //ถ้า search หรือ flights เปลี่ยน จะคำนวณผลลัพธ์ใหม่
+
+
 
   // ✅ Helper function: ดึง userId ที่ถูกต้อง
-  const getUserId = (user: User | null): ID => {
+  const getUserId = (user: User | null): ID => { //รับข้อมูลผู้ใช้ (user) แล้วดึง userId ที่ถูกต้องออกมา
     if (!user) return 0;
     // ลองดึง userId (camelCase จาก Backend) ก่อน, ถ้าไม่มีใช้ user_id (snake_case)
-    const id = user.userId ?? user.user_id ?? 0;
+    const id = user.userId ?? user.user_id ?? 0; // ??? คือ ถ้าข้างหน้าไม่มี ให้เอาข้างหลัง
     console.log('🆔 Getting userId:', { userId: user.userId, user_id: user.user_id, result: id });
     return id;
   };
@@ -245,12 +258,12 @@ function App() {
   // =========================================================
 
   // 1️⃣ กรณี "ยังไม่ Login": ใช้ Layout แบบ Full Screen + รูปพื้นหลัง (Classic Luxury Theme)
-  if (!currentUser) {
+  if (!currentUser) { //ถ้ายังไม่มีผู้ใช้ล็อกอิน ให้แสดงหน้า Login
     return (
       <div style={{ 
         position: 'fixed', // บังคับเต็มจอ ทับทุกอย่าง
         top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 9999,
+        zIndex: 9999, // อยู่บนสุด
         // ✅ รูปพื้นหลังเครื่องบินที่คุณต้องการ
         background: `linear-gradient(rgba(0, 20, 40, 0.4), rgba(0, 20, 40, 0.6)), url('https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=1920&q=80')`,
         backgroundSize: 'cover',
@@ -292,7 +305,7 @@ function App() {
         padding: '10px 40px', 
         background: 'rgba(255, 255, 255, 0.95)', 
         boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-        position: 'sticky', top: 0, zIndex: 1000,
+        position: 'sticky', top: 0, zIndex: 1000, //ให้อยู่บนสุดเวลาเลื่อนหน้า
         backdropFilter: 'blur(10px)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -309,7 +322,7 @@ function App() {
              <div style={{ fontSize: '0.75rem', color: 'var(--rich-gold)', fontWeight: 'bold' }}>{currentUser.role}</div>
           </div>
           
-          {currentUser.role === 'USER' && (
+          {currentUser.role === 'USER' && ( // ถ้าเป็น USER เท่านั้น ถึงจะแสดงปุ่มประวัติการจอง
             <button
               onClick={() => setShowMyBookings(true)}
               style={{
@@ -365,7 +378,7 @@ function App() {
         
         {/* ส่วนค้นหา (Search) */}
         <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
-           <FlightSearchForm onSearch={setSearch} />
+           <FlightSearchForm onSearch={setSearch} /> //เมื่อผู้ใช้กดค้นหา จะเรียก setSearch เพื่ออัปเดตสเตท search
         </div>
 
         {/* ส่วน Admin (ถ้ามีสิทธิ์) */}
@@ -389,28 +402,28 @@ function App() {
                </h2>
             </div>
             
-            <FlightList
+            <FlightList //แสดงรายการเที่ยวบินที่ผ่านการกรองแล้ว
               flights={filteredFlights}
               selectedFlightId={selectedFlight?.flight_id}
-              onSelect={setSelectedFlight}
+              onSelect={setSelectedFlight} //เมื่อผู้ใช้คลิกที่เที่ยวบิน จะเรียก setSelectedFlight เพื่ออัปเดตสเตท selectedFlight
             />
           </section>
 
           <section style={{ textAlign: 'left', position: 'sticky', top: '100px' }}>
-            {selectedFlight ? (
+            {selectedFlight ? ( //ถ้ามีเที่ยวบินที่ถูกเลือก จะแสดงแผงจองด้านขวา
               <BookingPanel 
                   userId={getUserId(currentUser)}
                   flight={selectedFlight}        
                   onBooked={(booking) => {       
                         setLatestBooking(booking);
-                        setFlights(flights.map(f => 
-                           f.flight_id === booking.flight_id 
-                           ? { ...f, available_seats: f.available_seats - booking.seat_count } 
+                        setFlights(flights.map(f =>//อัปเดตจำนวนที่นั่งว่างหลังจากจองสำเร็จ ตัดสต็อกที่นั่ง 
+                           f.flight_id === booking.flight_id //หาเที่ยวบินที่เพิ่งจอง
+                           ? { ...f, available_seats: f.available_seats - booking.seat_count } //ลดจำนวนที่นั่งว่างลง
                            : f
                         ));
                   }} 
               />
-            ) : (
+            ) : ( //ถ้ายังไม่มีเที่ยวบินที่ถูกเลือก จะแสดงข้อความแนะนำให้เลือกเที่ยวบิน
               <div className="glass-panel" style={{ textAlign: 'center', padding: '50px 30px', background: 'white', borderRadius: '15px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.5 }}>🎫</div>
                 <h2 style={{ marginTop: 0, fontFamily: 'Chonburi', color: '#ccc' }}>รอการเลือกเที่ยวบิน</h2>
@@ -435,7 +448,7 @@ function App() {
       {showMyBookings && (
         <MyBookings 
             userId={getUserId(currentUser)}
-            onClose={() => setShowMyBookings(false)} 
+            onClose={() => setShowMyBookings(false)}  //ปิด Modal
         />
       )}
     </div>

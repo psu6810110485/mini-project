@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import axios from 'axios'; // ✅ เพิ่ม axios เข้ามาเพื่อจัดการ API
 import type { Flight, ID } from '../types';
 
-interface AdminFlightManagerProps {
-  flights: Flight[];
-  onAddFlight: (flight: Flight) => Promise<void> | void;
-  onDeleteFlight: (id: ID) => void | Promise<void>;
+interface AdminFlightManagerProps { //ถ้าจะเรียกใช้ AdminFlightManager จะต้องส่ง 3 อย่างนี้มาให้ด้วย
+  flights: Flight[]; // รายการเที่ยวบินทั้งหมด
+  onAddFlight: (flight: Flight) => Promise<void> | void;  // ฟังก์ชันเพิ่มเที่ยวบิน ส่งข้อมูลกลับไปให้ตัวแม่ (App.tsx) ทำการบันทึกลง Database
+  onDeleteFlight: (id: ID) => void | Promise<void>; // ฟังก์ชันลบเที่ยวบิน ส่งข้อมูลกลับไปให้ตัวแม่ (App.tsx) ทำการลบจาก Database
 }
 
 export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights, onAddFlight, onDeleteFlight }) => {
@@ -15,7 +15,8 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
   // --- PART 1: EXISTING STATE (State เดิม ห้ามลบ) ---
   // =========================================================================
   
-  const [newFlight, setNewFlight] = useState<Partial<Flight>>({
+  const [newFlight, setNewFlight] = useState<Partial<Flight>>({ //เวลาแอดมินพิมพ์ข้อมูลลงในช่อง Input ข้อมูลเหล่านั้นจะถูกเก็บไว้ในตัวแปร newFlight นี้แบบ Real-time
+    //partial<Flight> คือการบอกว่า newFlight อาจจะมีข้อมูลบางส่วนของ Flight ก็ได้ ไม่จำเป็นต้องครบทุกฟิลด์
     flight_code: '',
     origin: '',
     destination: '',
@@ -26,24 +27,24 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
   });
 
   // State สำหรับ Modal ลบ (Logic เดิม)
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [flightIdToDelete, setFlightIdToDelete] = useState<ID | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);             // ควบคุมการแสดงผล Modal ลบ
+  const [flightIdToDelete, setFlightIdToDelete] = useState<ID | null>(null); // เก็บ ID ของเที่ยวบินที่ต้องการลบ
 
   // 🔥 [NEW] State สำหรับ Modal เพิ่มสำเร็จ (Premium Success)
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // =========================================================================
-  // --- PART 2: LOGIC HANDLERS (Logic แก้ไขให้ทำงานได้จริง) ---
+  // --- PART 2: LOGIC HANDLERS (Logic แก้ไขให้ทำงานได้จริง หัวใจหลักในการทำงาน) ---
   // =========================================================================
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const flightToAdd: Flight = {
-      flight_id: Date.now(),
-      flight_code: newFlight.flight_code || 'TG999',
-      origin: newFlight.origin || 'BKK',
-      destination: newFlight.destination || 'CNX',
+      flight_id: Date.now(), // สร้าง ID จำลองจากวันที่ชั่วคราว (ในระบบจริงควรใช้ ID จากฐานข้อมูล) เนื่องจากยังไม่มี Backend API สำหรับเพิ่มเที่ยวบิน
+      flight_code: newFlight.flight_code || 'TG999', // กำหนดค่าเริ่มต้นถ้าไม่มีการกรอก newFlight เปรียบเสมือนกระดาษที่แอดมินกรอกข้อมูล
+      origin: newFlight.origin || 'BKK', 
+      destination: newFlight.destination || 'CNX', 
       travel_date: newFlight.travel_date || new Date().toISOString(),
       price: Number(newFlight.price) || 0,
       available_seats: Number(newFlight.available_seats) || 0,
@@ -51,7 +52,9 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
     };
 
     try {
-      await onAddFlight(flightToAdd);
+      await onAddFlight(flightToAdd); // เรียกใช้ฟังก์ชันจาก props เพื่อเพิ่มเที่ยวบิน
+      
+      // รีเซ็ตฟอร์ม เพื่อให้พร้อมเพิ่มเที่ยวบินใหม่
 
       setNewFlight({
         flight_code: '', origin: '', destination: '', travel_date: '',
@@ -59,7 +62,7 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
       });
       
       // 🔥 [UPDATED] เปิด Modal สุดหรู (ไม่ต้องใช้ alert)
-      setShowSuccessModal(true);
+      setShowSuccessModal(true); // แสดง Modal เพิ่มเที่ยวบินสำเร็จ
 
     } catch (error) {
       console.error('Create flight failed', error);
@@ -68,28 +71,29 @@ export const AdminFlightManager: React.FC<AdminFlightManagerProps> = ({ flights,
     }
   };
 
+  // ฟังก์ชันเรียกใช้เมื่อแอดมินกดปุ่มลบเที่วยวบิน หรือกดปุ่ม ถังขยะ
   const handleRequestDelete = (id: ID) => {
-    setFlightIdToDelete(id);
-    setShowDeleteModal(true);
+    setFlightIdToDelete(id); // เก็บ ID ที่ต้องการลบ
+    setShowDeleteModal(true); // แสดง Modal ยืนยันการลบ
   };
 
   // 🔥 [CRITICAL UPDATE] แก้ไขฟังก์ชันนี้เพื่อให้ Admin ลบได้จริง!
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async () => { // ฟังก์ชันนี้จะถูกเรียกเมื่อแอดมินยืนยันการลบ
     if (flightIdToDelete) {
       try {
         // 1. ดึง Token จาก Storage (สำคัญมาก Admin ต้องมีสิ่งนี้)
-        const token = localStorage.getItem('token'); 
+        const token = localStorage.getItem('token'); // เพื่อยืนยันตัวตนว่าเป็น Admin จริงๆ (ต้องล็อกอินก่อนถึงจะมี token)
         
         // 2. เรียก API ลบโดยตรง พร้อมแนบ Header (แก้ปัญหา Permission Denied)
-        // ⚠️ ตรวจสอบ URL: http://localhost:3000/flights ให้ตรงกับ Backend ของคุณ
+        // ⚠️ ตรวจสอบ URL: http://localhost:3000/flights ให้ตรงกับ Backend 
         await axios.delete(`http://localhost:3000/flights/${flightIdToDelete}`, {
           headers: {
-            Authorization: `Bearer ${token}` // ✅ กุญแจสำคัญที่ทำให้ลบได้
+            Authorization: `Bearer ${token}` // ✅ กุญแจสำคัญที่ทำให้ลบได้ ต้องมี token
           }
         });
 
         // 3. อัปเดต UI (เรียก function จาก props เพื่อลบรายการออกจากหน้าจอ)
-        await onDeleteFlight(flightIdToDelete);
+        await onDeleteFlight(flightIdToDelete); // แจ้งตัวแม่ให้ลบข้อมูลใน state หลัก 
         
         // 4. ปิด Modal
         setShowDeleteModal(false);

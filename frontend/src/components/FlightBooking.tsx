@@ -1,7 +1,7 @@
 // แม่แบบการ์ดตั๋วเครื่องบินแบบ Premium
 const FlightBooking = ({ flight }: { flight: any }) => {
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
+    const d = new Date(dateStr); // แปลงสตริงเป็นวัตถุวันที่
     return isNaN(d.getTime()) ? "ระบุวันเดินทาง" : d.toLocaleDateString('th-TH', {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });

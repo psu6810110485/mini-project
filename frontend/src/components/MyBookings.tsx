@@ -9,8 +9,8 @@ interface MyBookingsProps {
   onClose: () => void
 }
 
-interface BookingWithFlight extends Booking {
-  flight?: {
+interface BookingWithFlight extends Booking { // extend Booking type เพื่อเพิ่ม flight info เอาข้อมูลจาก Booking
+  flight?: {             // ข้อมูลเที่ยวบิน (optional) การจอง กับเที่ยวบิน อยู่คนละตาราง   
     flight_code: string
     origin: string
     destination: string
@@ -22,26 +22,28 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
   // =========================================================================
   // --- PART 1: EXISTING STATE (State เดิมของงานเก่า) ---
   // =========================================================================
-  const [bookings, setBookings] = useState<BookingWithFlight[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [bookings, setBookings] = useState<BookingWithFlight[]>([]) // เก็บรายละเอียดการจองลง bookings
+  const [loading, setLoading] = useState(true)  // Loading state
+  const [error, setError] = useState<string | null>(null) // Error state
 
   // =========================================================================
   // --- PART 2: NEW STATE (เพิ่ม State สำหรับ Modal ยกเลิกแบบ Premium) ---
   // =========================================================================
+
   // ใช้ควบคุมการเปิด/ปิด Modal ยกเลิก
-  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false) // State ควบคุมการแสดง Modal ยกเลิก
+
   // ใช้เก็บ ID ของ Booking ที่กำลังจะถูกยกเลิก (เพื่อส่งไปให้ฟังก์ชันลบ)
-  const [bookingIdToCancel, setBookingIdToCancel] = useState<ID | null>(null)
+  const [bookingIdToCancel, setBookingIdToCancel] = useState<ID | null>(null) // ID ของ Booking ที่จะยกเลิก
 
   useEffect(() => {
     fetchBookings()
-  }, [userId])
+  }, [userId]) // ดึงข้อมูลการจอง (fetchBookings) ใหม่ทันที ทุกครั้งที่ userId มีการเปลี่ยนแปลง
 
   const fetchBookings = async () => {
     try {
       setLoading(true)
-      setError(null)
+      setError(null) // reset error
       
       // ✅ เรียก API ดึงประวัติการจอง (Logic เดิม)
       const response = await api.get<BookingWithFlight[]>(`/bookings/user/${userId}`)
@@ -52,7 +54,7 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
       console.error('❌ Failed to fetch bookings:', err)
       setError(err.response?.data?.message || 'ไม่สามารถโหลดประวัติการจองได้')
     } finally {
-      setLoading(false)
+      setLoading(false) // เสร็จแล้วไม่ว่าจะ error หรือไม่ก็ตาม ให้หยุดหมุน loading
     }
   }
 
@@ -62,14 +64,14 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
 
   // ฟังก์ชันที่ 1: (ใหม่) เมื่อกดปุ่มกากบาทสีแดง ให้เปิด Modal ถามก่อน
   const handleRequestCancel = (bookingId: ID) => {
-    setBookingIdToCancel(bookingId) // จำ ID ไว้
-    setShowCancelModal(true)        // เปิด Modal
+    setBookingIdToCancel(bookingId) // จำ ID ไว้ ตอนนี้ยังไม่ลบ
+    setShowCancelModal(true)        // เปิด Modal  เปิดหน้าถามก่อน
   }
 
   // ฟังก์ชันที่ 2: (เดิม + ปรับปรุง) ยืนยันการยกเลิกจริง (ย้าย Logic เดิมมาไว้ตรงนี้)
   const handleConfirmCancel = async () => {
     // ปิด Modal ก่อน
-    setShowCancelModal(false)
+    setShowCancelModal(false)   
 
     // ตรวจสอบความปลอดภัย
     if (!bookingIdToCancel) return
@@ -77,14 +79,14 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
     // --- เริ่ม Logic เดิมของคุณ (API Call & State Update) ---
     try {
       // เรียก API patch status = cancelled
-      await api.patch(`/bookings/${bookingIdToCancel}`, { status: 'cancelled' })
+      await api.patch(`/bookings/${bookingIdToCancel}`, { status: 'cancelled' }) //ส่งคำสั่งไปบอก Server ว่าช่วยแก้สถานะของ ID นี้ ให้เป็น cancelled
       
       // ✅ อัปเดต State (Logic เดิม)
       setBookings(prev => 
         prev.map(b => 
           b.booking_id === bookingIdToCancel 
-            ? { ...b, status: 'cancelled' } 
-            : b
+            ? { ...b, status: 'cancelled' }  // อัปเดตสถานะเป็น cancelled
+            : b // ถ้าไม่ใช่ booking ที่ยกเลิก ก็คืนค่าเดิม
         )
       )
       
@@ -96,7 +98,7 @@ export default function MyBookings({ userId, onClose }: MyBookingsProps) {
       alert('ยกเลิกการจองไม่สำเร็จ: ' + (err.response?.data?.message || 'เกิดข้อผิดพลาด'))
     } finally {
       // Reset ID
-      setBookingIdToCancel(null)
+      setBookingIdToCancel(null) // ล้าง ID หลังยกเลิกเสร็จ
     }
   }
 
