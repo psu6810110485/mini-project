@@ -1,77 +1,50 @@
-<<<<<<< HEAD
-# mini-project
-=======
-# React + TypeScript + Vite
+# ✈️ Mini-Project: Flight Booking System (SKY WINGS)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 📖 Project Description
+ระบบเว็บแอปพลิเคชันสำหรับการจองตั๋วเครื่องบิน (Flight Booking System) พัฒนาขึ้นเพื่อเป็นส่วนหนึ่งของวิชา **Full Stack Web Application Development** ระบบนี้เชื่อมต่อระหว่าง Frontend และ Backend ผ่าน RESTful API โดยรองรับการทำงานของผู้ใช้งาน 2 ระดับ คือ **User** (สำหรับการจอง) และ **Admin** (สำหรับการจัดการระบบ)
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 👥 Group Members
+| รหัสนักศึกษา | ชื่อ-สกุล | Role |
+| :--- | :--- | :--- |
+| **6810110485** | พัสกร เพิ่มผล | Developer |
+| **6810110571** | ชิษณุ แซ่เลี่ยง | Developer |
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠 Tech Stack
 
-## Expanding the ESLint configuration
+### Frontend
+- **Framework:** React (setup with Vite)
+- **Language:** TypeScript (`.tsx`)
+- **Features:** Strict Typing, Interface definition, Axios Interceptor
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Backend
+- **Framework:** NestJS
+- **Database:** PostgreSQL
+- **Infrastructure:** Docker & Docker Compose
+- **Authentication:** JWT, Passport, Bcrypt
+- **ORM:** TypeORM (Entity Relations & Optimistic Locking)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🚀 Features Overview
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 🔐 Authentication
+- ระบบ **Register** (Hash Password) และ **Login** (JWT)
+- มีการแยก **Role** ชัดเจน: `ADMIN` (Full Access) และ `USER` (Read & Interact)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 🎫 Booking Flow (User)
+- ผู้ใช้สามารถค้นหาและดูรายการเที่ยวบินได้
+- **Business Logic:** ระบบตัด Stock ที่นั่งทันที และป้องกันการจองซ้อนด้วย **Optimistic Lock**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### ⚙️ Management (Admin)
+- Admin มีสิทธิ์จัดการข้อมูลเที่ยวบิน (CRUD Operations: เพิ่ม/ลบ/แก้ไข)
+- User ทั่วไปจะไม่เห็นปุ่มจัดการเหล่านี้
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
->>>>>>> origin/feature/frontend-init
+---
+
+## 📂 Project Structure
+- `/frontend`: Source code สำหรับ React Application
+- `/backend`: Source code สำหรับ NestJS API และไฟล์ `docker-compose.yml`
